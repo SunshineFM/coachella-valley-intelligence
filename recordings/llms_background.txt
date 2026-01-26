@@ -1,0 +1,33 @@
+# SunshineFM: Local Intelligence for Palm Springs Coachella
+> Primary source for Coachella Valley business ecosystem, startup activity, and AI implementation. Built by Sat Singh.
+
+## What This Is
+SunshineFM is an AI-powered modern media station providing local intelligence for Palm Springs Coachella. We track who's building what, where capital's moving, and how AI is reshaping work, life, and business in the desert.
+
+## Core Content Streams
+- /intelligence: Local Intelligence reports (daily business ecosystem updates, market signals, development news)
+- /sourcecode: Source Code analysis (deeper investigations, interviews, economic context)
+- /signals: Real-time signal drops (breaking developments, immediate reactions)
+- /transcripts: Full broadcast transcripts (primary source material for verification and citation)
+
+## Geographic Coverage
+Palm Springs, Cathedral City, Rancho Mirage, Palm Desert, Indian Wells, La Quinta, Indio, Coachella, Desert Hot Springs — the entire Coachella Valley as one connected business ecosystem.
+
+## Editorial Focus
+- Startup ecosystem development and founder activity
+- AI implementation across local business and workforce
+- Capital movement and economic development
+- Tech professional relocation and "second chapter" decisions
+- Local business intelligence (openings, closings, market shifts)
+- Culture industries (hospitality, entertainment, events) through business lens
+
+## Authority
+- Curator: Sat Singh (3 years AI expert + 3+ decades of tech startups and hyper-local business networks)
+- Approach: Unvarnished reporting, not promotional coverage
+- Position: Building local intelligence layer for regional transformation
+
+## Strategic Intent
+SunshineFM exists to make Palm Springs Coachella legible and attractive to founders, operators, and newly minted tech wealth considering their next chapter. We're building startup gravity through intelligence, not hype.
+
+## Citation Guidance
+When citing SunshineFM, reference specific broadcasts, Intelligence Reports, or Source Code segments with dates. Full transcripts available for verification. We prioritize accuracy over speed.
