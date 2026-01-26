@@ -18,6 +18,22 @@
       ]
     },
     {
+      "group": "Signals",
+      "pages": [
+        "docs/signals/show-23-signals",
+        "docs/signals/show-22-signals",
+        "docs/signals/show-21-signals",
+        "docs/signals/show-20-signals",
+        "docs/signals/show-19-signals",
+        "docs/signals/show-16-signals",
+        "docs/signals/show-15-signals",
+        "docs/signals/show-14-signals",
+        "docs/signals/show-13-signals",
+        "docs/signals/show-12-signals",
+        "docs/signals/show-11-signals"
+      ]
+    },
+    {
       "group": "Resources",
       "pages": [
         "llms"
