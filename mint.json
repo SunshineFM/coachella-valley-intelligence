@@ -1,0 +1,17 @@
+{
+  "name": "SunshineFM: Palm Springs Coachella",
+  "navigation": [
+    {
+      "group": "The Business Pulse",
+      "pages": ["docs/articles"]
+    },
+    {
+      "group": "Daily Signals",
+      "pages": ["docs/signals"]
+    }
+  ],
+  "colors": {
+    "primary": "#FFD84D",
+    "dark": "#1B2A4E"
+  }
+}
