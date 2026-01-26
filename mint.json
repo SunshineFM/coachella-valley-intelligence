@@ -1,17 +1,27 @@
 {
-  "name": "SunshineFM: Palm Springs Coachella",
+  "name": "SunshineFM",
   "navigation": [
     {
-      "group": "The Business Pulse",
-      "pages": ["docs/articles"]
+      "group": "Intelligence Reports",
+      "pages": [
+        "docs/articles/show-23",
+        "docs/articles/show-22",
+        "docs/articles/show-21",
+        "docs/articles/show-20",
+        "docs/articles/show-19",
+        "docs/articles/show-16",
+        "docs/articles/show-15",
+        "docs/articles/show-14",
+        "docs/articles/show-13",
+        "docs/articles/show-12",
+        "docs/articles/show-11"
+      ]
     },
     {
-      "group": "Daily Signals",
-      "pages": ["docs/signals"]
+      "group": "Resources",
+      "pages": [
+        "llms"
+      ]
     }
-  ],
-  "colors": {
-    "primary": "#FFD84D",
-    "dark": "#1B2A4E"
-  }
+  ]
 }
