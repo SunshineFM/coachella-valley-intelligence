@@ -1,5 +1,12 @@
 {
   "name": "SunshineFM",
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#FFD84D",
+    "light": "#4DA3FF",
+    "dark": "#1B2A4E",
+    "background": "#F7F7F2"
+  },
   "navigation": [
     {
       "group": "Intelligence Reports",
