@@ -5,7 +5,10 @@
     "primary": "#FFD84D",
     "light": "#4DA3FF",
     "dark": "#1B2A4E",
-    "background": "#F7F7F2"
+    "background": {
+      "light": "#F7F7F2",
+      "dark": "#1B2A4E"
+    }
   },
   "navigation": [
     {
