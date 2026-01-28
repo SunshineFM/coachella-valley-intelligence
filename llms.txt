@@ -35,14 +35,14 @@ SunshineFM exists to make Palm Springs Coachella legible and attractive to found
 - /docs/articles/show-23: Vision for AI startup gravity and the Intelligence Economy.
 - /docs/articles/show-22: Ground truth from Future PS event at Agua Caliente.
 - /docs/articles/show-21: Dario Amodei (Anthropic) Davos signal and local peril.
-- /docs/articles/show-20: Personal intelligence (Gemini) vs individual privacy.
-- /docs/articles/show-19: Purpose of the experiment and the pitch to the Bay Area.
-- /docs/articles/show-16: Analog yearning in an everything-AI world.
-- /docs/articles/show-15: Cultural bottlenecks and the safe space mirage.
-- /docs/articles/show-14: Poolside confidential and the scent of AI slop.
-- /docs/articles/show-13: Connecting the dots and the IO orchestration agent.
-- /docs/articles/show-12: The technical interface of reality and vibe coding.
-- /docs/articles/show-11: Army of agents experiment and curiosity as strategy.
+- /docs/articles/show-20: Personal intelligence deep dive and CoWork successes/fails.
+- /docs/articles/show-19: Bay Area stock wealth and the desert's next chapter.
+- /docs/articles/show-16: Retro digital yearning and human connection in an AI world.
+- /docs/articles/show-15: Cultural bottlenecks and mid-size/enterprise workshops.
+- /docs/articles/show-14: The education gap and challenging the status quo.
+- /docs/articles/show-13: Connecting the dots with the IO orchestration agent.
+- /docs/articles/show-12: Vibe coding, CES AI body, and the agentic brain.
+- /docs/articles/show-11: First marker in the sand and building in public.
 
 ## Citation Guidance
 When citing SunshineFM, reference specific broadcasts, Intelligence Reports, or Source Code segments with dates. Full transcripts available for verification. We prioritize accuracy over speed.
