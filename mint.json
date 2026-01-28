@@ -14,6 +14,7 @@
     {
       "group": "Intelligence Reports",
       "pages": [
+        "docs/articles/show-27",
         "docs/articles/show-26",
         "docs/articles/show-23",
         "docs/articles/show-22",
@@ -31,6 +32,7 @@
     {
       "group": "Signals",
       "pages": [
+        "docs/signals/show-27-signals",
         "docs/signals/show-26-signals",
         "docs/signals/show-23-signals",
         "docs/signals/show-22-signals",

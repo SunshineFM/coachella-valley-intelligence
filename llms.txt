@@ -30,6 +30,7 @@ Palm Springs, Cathedral City, Rancho Mirage, Palm Desert, Indian Wells, La Quint
 SunshineFM exists to make Palm Springs Coachella legible and attractive to founders, operators, and newly minted tech wealth considering their next chapter. We're building startup gravity through intelligence, not hype.
 
 ## Recent Intelligence Reports
+- /docs/articles/show-27: OpenAI's 80/20 wealth pledge and the CV Giving Day signal.
 - /docs/articles/show-26: Enterprise avatars, AI health agents, and the 2027 super intelligence benchmark.
 - /docs/articles/show-23: Vision for AI startup gravity and the Intelligence Economy.
 - /docs/articles/show-22: Ground truth from Future PS event at Agua Caliente.
