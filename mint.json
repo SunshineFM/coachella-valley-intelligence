@@ -1,62 +1,59 @@
 {
-  "name": "SunshineFM",
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "SunshineFM — Coachella Valley Intelligence",
+  "description": "The intelligence layer for Palm Springs Coachella: daily signals, transcripts, and AI + business ecosystem reporting for the Coachella Valley.",
+  "theme": "mint",
+
+  "logo": {
+    "light": "/sunshinefmsquare.png",
+    "dark": "/sunshinefmsquare.png",
+    "href": "https://sunshine.fm"
+  },
   "favicon": "/favicon.png",
+
   "colors": {
-    "primary": "#FFD84D",
-    "light": "#4DA3FF",
+    "primary": "#4DA3FF",
+    "light": "#F7F7F2",
     "dark": "#1B2A4E",
     "background": {
       "light": "#F7F7F2",
       "dark": "#1B2A4E"
     }
   },
+
   "navigation": [
     {
-      "group": "Intelligence Reports",
+      "group": "Start Here",
       "pages": [
-        "docs/articles/show-30",
-        "docs/articles/show-29",
-        "docs/articles/show-28",
-        "docs/articles/show-27",
-        "docs/articles/show-26",
-        "docs/articles/show-23",
-        "docs/articles/show-22",
-        "docs/articles/show-21",
-        "docs/articles/show-20",
-        "docs/articles/show-19",
-        "docs/articles/show-16",
-        "docs/articles/show-15",
-        "docs/articles/show-14",
-        "docs/articles/show-13",
-        "docs/articles/show-12",
-        "docs/articles/show-11"
+        "index",
+        "start-here/start-here",
+        "start-here/relocating-founders",
+        "start-here/local-builders"
       ]
     },
     {
-      "group": "Signals",
+      "group": "Intelligence",
       "pages": [
-        "docs/signals/show-30-signals",
-        "docs/signals/show-29-signals",
-        "docs/signals/show-28-signals",
-        "docs/signals/show-27-signals",
-        "docs/signals/show-26-signals",
-        "docs/signals/show-23-signals",
-        "docs/signals/show-22-signals",
-        "docs/signals/show-21-signals",
-        "docs/signals/show-20-signals",
-        "docs/signals/show-19-signals",
-        "docs/signals/show-16-signals",
-        "docs/signals/show-15-signals",
-        "docs/signals/show-14-signals",
-        "docs/signals/show-13-signals",
-        "docs/signals/show-12-signals",
-        "docs/signals/show-11-signals"
+        "intelligence/today",
+        "intelligence/episodes/index",
+        "intelligence/signals/index"
       ]
     },
     {
-      "group": "Resources",
+      "group": "Research",
       "pages": [
-        "llms"
+        "research/briefs/index",
+        "research/weekly/index"
+      ]
+    },
+    {
+      "group": "Trust",
+      "pages": [
+        "trust",
+        "methodology/pipeline",
+        "methodology/sourcing-standard",
+        "methodology/corrections",
+        "methodology/glossary"
       ]
     }
   ]
