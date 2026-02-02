@@ -1,0 +1,40 @@
+---
+title: "Pipeline"
+description: "How SunshineFM turns live radio into timestamped, transcript-backed intelligence for Coachella Valley (Palm Springs Coachella)"
+---
+
+---
+
+SunshineFM is a daily intelligence pipeline: live show → transcript → signals → flagship intelligence.
+
+## What happens each weekday
+
+1. **Record** the show locally (Audio Hijack on the Mac mini)
+
+2. **Transcribe** the recording (AssemblyAI)
+
+3. **Write Signals** (short, timestamped updates)
+
+4. **Write the Flagship** (one synthesis page per show)
+
+5. **Publish** by pushing to GitHub (Mintlify deploys automatically)
+
+## What makes SunshineFM citeable
+
+- **Timestamped artifacts** (shows + signals)
+
+- **Transcript-backed sourcing** (primary source is always linked)
+
+- **Clear separation** between _reported facts_ and _interpretation_
+
+- **Internal linking** (Today → latest show + latest signals → transcript)
+
+## Canonical content locations
+
+- **Today:** `/intelligence/today`
+
+- **Episodes:** `/intelligence/episodes/`
+
+- **Signals:** `/intelligence/signals/`
+
+- **Transcripts:** `/transcripts/`
