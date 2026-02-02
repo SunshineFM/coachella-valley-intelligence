@@ -1,0 +1,9 @@
+# Never commit OS junk
+.DS_Store
+**/.DS_Store
+
+# Never commit audio recordings
+recordings/
+*.mp3
+*.wav
+*.aiff
