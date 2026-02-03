@@ -3,55 +3,49 @@
   "name": "SunshineFM — Coachella Valley Intelligence",
   "description": "The intelligence layer for Palm Springs Coachella: daily signals, transcripts, and AI + business ecosystem reporting for the Coachella Valley.",
   "theme": "mint",
-  "logo": {
-    "light": "/sunshinefmsquare.png",
-    "dark": "/sunshinefmsquare.png",
-    "href": "https://sunshine.fm"
-  },
-  "favicon": "/favicon.png",
   "colors": {
     "primary": "#4DA3FF",
     "light": "#F7F7F2",
-    "dark": "#1B2A4E",
-    "background": {
-      "light": "#F7F7F2",
-      "dark": "#1B2A4E"
-    }
+    "dark": "#1B2A4E"
   },
-  "navigation": [
-    {
-      "group": "Start Here",
-      "pages": [
-        "index",
-        "start-here/start-here",
-        "start-here/relocating-founders",
-        "start-here/local-builders"
-      ]
-    },
-    {
-      "group": "Intelligence",
-      "pages": [
-        "intelligence/today",
-        "intelligence/episodes/index",
-        "intelligence/signals/index"
-      ]
-    },
-    {
-      "group": "Research",
-      "pages": [
-        "research/briefs/index",
-        "research/weekly/index"
-      ]
-    },
-    {
-      "group": "Trust",
-      "pages": [
-        "trust",
-        "methodology/pipeline",
-        "methodology/sourcing-standard",
-        "methodology/corrections",
-        "methodology/glossary"
-      ]
-    }
-  ]
+  "logo": "/sunshinefmsquare.png",
+  "favicon": "/favicon.png",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Start Here",
+        "pages": [
+          "index",
+          "start-here/start-here",
+          "start-here/relocating-founders",
+          "start-here/local-builders"
+        ]
+      },
+      {
+        "group": "Intelligence",
+        "pages": [
+          "intelligence/today",
+          "intelligence/episodes/index",
+          "intelligence/signals/index"
+        ]
+      },
+      {
+        "group": "Research",
+        "pages": [
+          "research/briefs/index",
+          "research/weekly/index"
+        ]
+      },
+      {
+        "group": "Trust",
+        "pages": [
+          "trust",
+          "methodology/pipeline",
+          "methodology/sourcing-standard",
+          "methodology/corrections",
+          "methodology/glossary"
+        ]
+      }
+    ]
+  }
 }
