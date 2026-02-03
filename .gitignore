@@ -1,9 +1,13 @@
-# Never commit OS junk
+# macOS noise
 .DS_Store
-**/.DS_Store
 
-# Never commit audio recordings
+# Local audio recordings (keep locally, never commit)
 recordings/
 *.mp3
-*.wav
-*.aiff
+
+# Node / tooling noise (safe defaults)
+node_modules/
+.npm/
+.DS_Store?
+
+
