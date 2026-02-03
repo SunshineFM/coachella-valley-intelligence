@@ -8,7 +8,11 @@
     "light": "#F7F7F2",
     "dark": "#1B2A4E"
   },
-  "logo": "/sunshinefmsquare.png",
+  "logo": {
+    "light": "/images/sunshinefmsquare.png",
+    "dark": "/images/sunshinefmsquare.png",
+    "href": "/"
+  },
   "favicon": "/favicon.png",
   "navigation": {
     "groups": [
@@ -47,5 +51,13 @@
         ]
       }
     ]
+  },
+  "background": {
+    "color": {
+      "dark": "#1B2A4E"
+    }
+  },
+  "appearance": {
+    "default": "light"
   }
 }
