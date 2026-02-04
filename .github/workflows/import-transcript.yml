@@ -1,0 +1,53 @@
+name: Import transcript from sunshinefm-website
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Episode date (YYYY-MM-DD)"
+        required: true
+        default: "2026-02-03"
+      source_path:
+        description: "Path in sunshinefm-website repo (URL encoded spaces allowed)"
+        required: true
+        default: "episodes/Tuesday%2002-03-2026/transcript.md"
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout coachella-valley-intelligence
+        uses: actions/checkout@v4
+
+      - name: Download transcript from sunshinefm-website
+        run: |
+          set -euo pipefail
+          DATE="${{ inputs.date }}"
+          SRC_PATH="${{ inputs.source_path }}"
+          RAW_URL="https://raw.githubusercontent.com/SunshineFM/sunshinefm-website/main/${SRC_PATH}"
+
+          mkdir -p transcripts
+          curl -L "$RAW_URL" -o "transcripts/${DATE}-raw.txt"
+
+          echo "Downloaded:"
+          ls -lah "transcripts/${DATE}-raw.txt"
+          head -n 5 "transcripts/${DATE}-raw.txt" || true
+
+      - name: Commit and push if changed
+        run: |
+          set -euo pipefail
+          git config user.name "SunshineFM Bot"
+          git config user.email "bot@sunshine.fm"
+
+          git add transcripts/*.txt || true
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: import transcript ${{ inputs.date }} from sunshinefm-website"
+          git push
