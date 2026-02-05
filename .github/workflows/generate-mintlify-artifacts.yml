@@ -50,7 +50,7 @@ jobs:
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          git add intelligence/episodes intelligence/signals intelligence/today.mdx transcripts || true
+          git add intelligence/episodes intelligence/signals transcripts || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
