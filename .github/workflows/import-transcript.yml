@@ -1,4 +1,4 @@
-name: Import transcript + generate Mintlify artifacts
+name: Import transcript from sunshinefm-website
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
         default: "episodes/Tuesday%2002-03-2026/transcript.md"
 
 jobs:
-  build:
+  import:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout coachella-valley-intelligence
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download transcript from sunshinefm-website
         run: |
@@ -36,208 +38,24 @@ jobs:
           ls -lah "transcripts/${DATE}-raw.txt"
           head -n 5 "transcripts/${DATE}-raw.txt" || true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install generator dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install openai
-
-      - name: Generate episode + signals + update Today
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Commit changes (if any)
         run: |
           set -euo pipefail
-          DATE="${{ inputs.date }}"
-
-          python - <<'PY'
-          import os, pathlib, datetime, textwrap, json
-
-          from openai import OpenAI
-
-          date_str = os.environ.get("DATE") or "${{ inputs.date }}"
-          transcript_path = pathlib.Path(f"transcripts/{date_str}-raw.txt")
-
-          if not transcript_path.exists():
-            raise SystemExit(f"Missing transcript: {transcript_path}")
-
-          transcript = transcript_path.read_text(encoding="utf-8", errors="ignore").strip()
-
-          # Load your existing lead editor rules if present
-          lead_path = pathlib.Path(".lead-editor-instructions.md")
-          lead_rules = lead_path.read_text(encoding="utf-8", errors="ignore").strip() if lead_path.exists() else ""
-
-          client = OpenAI()
-
-          # --- Prompts (tight + deterministic) ---
-          system_episode = f"""
-          You are the daily editor for SunshineFM — Coachella Valley Intelligence.
-          Write in Sat's on-air voice: sharp, warm, witty-but-not-silly, locally grounded.
-          Priorities: LLM-friendly first, local operators second, relocating founders third.
-          You MUST be faithful to the transcript. No invented facts.
-          Use clear headings and short paragraphs. Avoid filler.
-          {lead_rules}
-          """.strip()
-
-          user_episode = f"""
-          Create an MDX episode page for date: {date_str}.
-
-          Requirements:
-          - Output ONLY MDX (no backticks).
-          - Include frontmatter:
-            title: "SunshineFM — {date_str}"
-            description: 1–2 sentence summary for humans + robots
-            date: "{date_str}"
-            type: "episode"
-            region: "Coachella Valley"
-            geo: "Palm Springs, CA"
-            source_transcript: "/transcripts/{date_str}-raw"
-          - Body structure (H2s):
-            1) What happened today
-            2) Why it matters in Palm Springs Coachella
-            3) What local operators should do next
-            4) The AI angle (how to apply it)
-            5) Names + entities mentioned (bullet list)
-          - Keep it ~700–1200 words.
-          - If the transcript is thin on specifics, say so explicitly.
-
-          Transcript:
-          {transcript}
-          """.strip()
-
-          system_signals = """
-          You produce SunshineFM Signals: concise operator-grade intelligence.
-          No fluff. No invented facts. If uncertain, label it.
-          Each signal should include: What changed, Why it matters locally, What to do next, AI angle.
-          """.strip()
-
-          user_signals = f"""
-          Create an MDX signals page for date: {date_str}.
-
-          Requirements:
-          - Output ONLY MDX (no backticks).
-          - Include frontmatter:
-            title: "Signals — {date_str}"
-            description: "What changed, why it matters in Coachella Valley, and what to do next."
-            date: "{date_str}"
-            type: "signals"
-            region: "Coachella Valley"
-            geo: "Palm Springs, CA"
-            source_transcript: "/transcripts/{date_str}-raw"
-          - Produce 5–10 signals max.
-          - Each signal format:
-            ### [Short headline]
-            **What changed:** ...
-            **Why it matters here:** ...
-            **What to do next:** ...
-            **AI angle:** ...
-          - Use only transcript material.
-
-          Transcript:
-          {transcript}
-          """.strip()
-
-          def chat(system, user):
-            resp = client.chat.completions.create(
-              model="gpt-4.1-mini",
-              messages=[
-                {"role":"system","content":system},
-                {"role":"user","content":user},
-              ],
-              temperature=0.6,
-            )
-            return resp.choices[0].message.content.strip()
-
-          episode_mdx = chat(system_episode, user_episode)
-          signals_mdx = chat(system_signals, user_signals)
-
-          # --- Write files in your Mintlify structure ---
-          ep_dir = pathlib.Path("intelligence/episodes")
-          sig_dir = pathlib.Path("intelligence/signals")
-          ep_dir.mkdir(parents=True, exist_ok=True)
-          sig_dir.mkdir(parents=True, exist_ok=True)
-
-          ep_path = ep_dir / f"{date_str}.mdx"
-          sig_path = sig_dir / f"{date_str}-signals.mdx"
-
-          ep_path.write_text(episode_mdx + "\n", encoding="utf-8")
-          sig_path.write_text(signals_mdx + "\n", encoding="utf-8")
-
-          # --- Update intelligence/today.mdx (simple replace strategy) ---
-          today_path = pathlib.Path("intelligence/today.mdx")
-          today_path.parent.mkdir(parents=True, exist_ok=True)
-
-          latest_episode_link = f"/intelligence/episodes/{date_str}"
-          latest_signals_link = f"/intelligence/signals/{date_str}-signals"
-
-          if today_path.exists():
-            today = today_path.read_text(encoding="utf-8", errors="ignore")
-          else:
-            today = textwrap.dedent(f"""\
-            ---
-            title: "Intelligence Today"
-            description: "Latest SunshineFM intelligence for Palm Springs Coachella."
-            ---
-            ## Latest
-
-            - **Latest Flagship:** ({latest_episode_link})
-            - **Latest Signals:** ({latest_signals_link})
-
-            ## What this is
-            SunshineFM publishes daily, transcript-backed intelligence for the Coachella Valley.
-            """)
-          # naive but robust: rewrite the Latest block
-          lines = today.splitlines()
-          out = []
-          in_latest = False
-          wrote_latest = False
-          for line in lines:
-            if line.strip() == "## Latest":
-              in_latest = True
-              out.append(line)
-              out.append("")
-              out.append(f"- **Latest Flagship:** ({latest_episode_link})")
-              out.append(f"- **Latest Signals:** ({latest_signals_link})")
-              out.append("")
-              wrote_latest = True
-              continue
-            if in_latest:
-              # stop skipping when next header starts
-              if line.startswith("## ") and line.strip() != "## Latest":
-                in_latest = False
-                out.append(line)
-              else:
-                continue
-            else:
-              out.append(line)
-          if not wrote_latest:
-            out.insert(0, "## Latest\n")
-            out.insert(1, f"- **Latest Flagship:** ({latest_episode_link})")
-            out.insert(2, f"- **Latest Signals:** ({latest_signals_link})\n")
-          today_path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
-
-          print("Wrote:")
-          print(ep_path)
-          print(sig_path)
-          print(today_path)
-          PY
-
-      - name: Commit and push changes if any
-        run: |
-          set -euo pipefail
-          DATE="${{ inputs.date }}"
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          git add transcripts/*.txt intelligence/episodes/*.mdx intelligence/signals/*.mdx intelligence/today.mdx || true
+          git add transcripts/*.txt || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
 
-          git commit -m "feat: publish ${DATE} transcript, episode, and signals"
-          git push
+          git commit -m "chore: import transcript ${{ inputs.date }} from sunshinefm-website"
+
+      - name: Sync with remote main and push
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
