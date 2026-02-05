@@ -314,9 +314,7 @@ TRANSCRIPT:
 def update_today(latest_date: str, episode_title: str):
   """
   Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
-  Uses markers. If missing, appends a minimal block.
-
-  IMPORTANT: For Mintlify/MDX, use MDX comments: {/* ... */}
+  Uses MDX-safe markers: {/* ... */}
   """
   episode_link = f"/intelligence/episodes/{latest_date}"
   signals_link = f"/intelligence/signals/{latest_date}-signals"
