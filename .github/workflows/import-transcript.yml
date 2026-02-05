@@ -1,0 +1,79 @@
+name: Import transcript from sunshinefm-website
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Episode date (YYYY-MM-DD)"
+        required: true
+        default: "2026-02-03"
+      source_path:
+        description: "Path in sunshinefm-website repo (URL encoded spaces allowed)"
+        required: true
+        default: "episodes/Tuesday%2002-03-2026/transcript.md"
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout coachella-valley-intelligence
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download transcript from sunshinefm-website
+        run: |
+          set -euo pipefail
+          DATE="${{ inputs.date }}"
+          SRC_PATH="${{ inputs.source_path }}"
+          RAW_URL="https://raw.githubusercontent.com/SunshineFM/sunshinefm-website/main/${SRC_PATH}"
+
+          mkdir -p transcripts
+          curl -L "$RAW_URL" -o "transcripts/${DATE}-raw.txt"
+
+          echo "Downloaded:"
+          ls -lah "transcripts/${DATE}-raw.txt"
+          head -n 5 "transcripts/${DATE}-raw.txt" || true
+
+      - name: Configure git identity
+        run: |
+          set -euo pipefail
+          git config user.name "SunshineFM Bot"
+          git config user.email "bot@sunshine.fm"
+
+      - name: Commit changes (if any)
+        run: |
+          set -euo pipefail
+          git add transcripts/*.txt || true
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: import transcript ${{ inputs.date }} from sunshinefm-website"
+
+      - name: Rebase onto latest main and push (retry)
+        run: |
+          set -euo pipefail
+
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i: syncing with origin/main..."
+            git fetch origin main
+            git rebase origin/main || (git rebase --abort && exit 1)
+
+            echo "Attempt $i: pushing..."
+            if git push origin HEAD:main; then
+              echo "Push succeeded."
+              exit 0
+            fi
+
+            echo "Push failed (someone else updated main). Sleeping briefly and retrying..."
+            sleep $((2*i))
+          done
+
+          echo "Push failed after 5 attempts."
+          exit 1
