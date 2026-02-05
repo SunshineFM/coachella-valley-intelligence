@@ -30,7 +30,8 @@ def openai_chat(system: str, user: str) -> str:
       {"role": "system", "content": system},
       {"role": "user", "content": user},
     ],
-    "temperature": 0.6,
+    "temperature": 0.2,
+    "response_format": {"type": "json_object"},
   }
 
   req = urllib.request.Request(
