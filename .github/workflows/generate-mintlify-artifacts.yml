@@ -1,26 +1,29 @@
 name: Generate Mintlify artifacts from transcripts
 
 on:
+  push:
+    paths:
+      - "transcripts/*-raw.txt"
+
   workflow_run:
     workflows: ["Import transcript from sunshinefm-website"]
-    types:
-      - completed
+    types: [completed]
+
   workflow_dispatch:
 
 jobs:
   generate:
-    # Only run when the import workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
+    # IMPORTANT: don't skip when manually run
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+
     steps:
-      - name: Checkout repo at imported commit
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # Checkout the exact commit created by the import workflow run
-          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -51,7 +54,6 @@ jobs:
 
           git commit -m "feat: generate Mintlify artifacts from transcript"
 
-          # Avoid non-fast-forward if Mintlify editor (or anything else) pushed since checkout
           for i in 1 2 3 4 5; do
             git pull --rebase origin main || true
             if git push origin main; then
