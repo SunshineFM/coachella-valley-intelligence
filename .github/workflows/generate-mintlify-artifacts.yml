@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - "transcripts/*-raw.txt"
-  workflow_dispatch:
 
   workflow_run:
     workflows: ["Import transcript from sunshinefm-website"]
