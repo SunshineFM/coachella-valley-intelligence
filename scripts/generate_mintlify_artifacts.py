@@ -13,10 +13,12 @@ EPISODES_DIR = os.path.join("intelligence", "episodes")
 SIGNALS_DIR = os.path.join("intelligence", "signals")
 TODAY_PATH = os.path.join("intelligence", "today.mdx")
 
-DATE_RE = re.compile(r"transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
+DATE_RE = re.compile(r"^transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
+
 
 def sh(cmd: list[str]) -> str:
     return subprocess.check_output(cmd, text=True).strip()
+
 
 def openai_chat(system: str, user: str) -> str:
     if not API_KEY:
@@ -28,7 +30,7 @@ def openai_chat(system: str, user: str) -> str:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "temperature": 0.4,
+        "temperature": 0.6,
     }
 
     req = urllib.request.Request(
@@ -45,18 +47,64 @@ def openai_chat(system: str, user: str) -> str:
         data = json.loads(resp.read().decode("utf-8"))
         return data["choices"][0]["message"]["content"].strip()
 
+
 def ensure_dirs():
     os.makedirs(EPISODES_DIR, exist_ok=True)
     os.makedirs(SIGNALS_DIR, exist_ok=True)
+
+
+def changed_transcripts() -> list[str]:
+    """
+    In a push event, find which transcript files changed.
+    If workflow_dispatch (no before SHA), fall back to newest transcript file.
+    """
+    before = ""
+    sha = os.environ.get("GITHUB_SHA", "")
+
+    try:
+        event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+        if event_path and os.path.exists(event_path):
+            with open(event_path, "r", encoding="utf-8") as f:
+                evt = json.load(f)
+            before = evt.get("before", "") or ""
+    except Exception:
+        before = ""
+
+    files: list[str] = []
+    if before and sha and before != "0000000000000000000000000000000000000000":
+        try:
+            diff = sh(["git", "diff", "--name-only", before, sha])
+            for line in diff.splitlines():
+                line = line.strip()
+                if DATE_RE.match(line):
+                    files.append(line)
+        except Exception:
+            pass
+
+    if files:
+        return sorted(set(files))
+
+    # fallback: newest transcript
+    candidates: list[tuple[float, str]] = []
+    if os.path.isdir(TRANSCRIPTS_DIR):
+        for fn in os.listdir(TRANSCRIPTS_DIR):
+            if re.match(r"^\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
+                full = os.path.join(TRANSCRIPTS_DIR, fn)
+                candidates.append((os.path.getmtime(full), full))
+    candidates.sort(reverse=True)
+    return [candidates[0][1]] if candidates else []
+
 
 def read_text(path: str) -> str:
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read().strip()
 
+
 def write_text(path: str, content: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(content.rstrip() + "\n")
+
 
 def mdx_frontmatter(title: str, description: str) -> str:
     title = str(title).replace('"', '\\"').strip()
@@ -67,161 +115,56 @@ description: "{description}"
 ---
 """
 
+
 def extract_json(text: str) -> str:
     """
-    Extract the first JSON object from a model response.
-    Works even if wrapped in prose or code fences.
+    Be forgiving if the model wraps JSON in text. Grab the first {...} block.
     """
-    # Strip code fences if present
-    text = re.sub(r"^```(json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE | re.MULTILINE)
+    m = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not m:
+        raise ValueError("Could not find JSON in model output.")
+    return m.group(0)
 
-    # Find first '{' and last '}' (best-effort)
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError("Could not find JSON object in model output.")
-    return text[start : end + 1]
 
-def safe_json_loads(raw: str) -> dict:
-    """
-    Parse JSON with a small retry that asks the model to repair JSON if needed.
-    """
-    try:
-        return json.loads(raw)
-    except Exception:
-        fixer_system = "You repair JSON. Output ONLY valid JSON. No markdown. No commentary."
-        fixer_user = f"Fix this into valid JSON:\n\n{raw}"
-        fixed = openai_chat(fixer_system, fixer_user)
-        fixed_obj = extract_json(fixed)
-        return json.loads(fixed_obj)
-
-def normalize_markdown(x) -> str:
-    """
-    Guarantee we return a markdown string.
-    If the model returns a list/dict, convert it into readable markdown.
-    """
-    if x is None:
-        return ""
+def _ensure_str(x) -> str:
     if isinstance(x, str):
-        return x.strip()
-
-    # If signals accidentally came back as list-of-dicts, format them.
+        return x
     if isinstance(x, list):
-        lines = []
-        for item in x:
-            if isinstance(item, dict):
-                wc = item.get("What changed") or item.get("what_changed") or item.get("whatChanged") or ""
-                wm = item.get("Why it matters (Palm Springs Coachella)") or item.get("why_matters") or item.get("whyMatters") or ""
-                wn = item.get("What to do next") or item.get("what_next") or item.get("whatNext") or ""
-                aa = item.get("AI angle") or item.get("ai_angle") or item.get("aiAngle") or ""
-                lines.append(f"- **What changed:** {str(wc).strip()}")
-                lines.append(f"  - **Why it matters (Palm Springs Coachella):** {str(wm).strip()}")
-                lines.append(f"  - **What to do next:** {str(wn).strip()}")
-                lines.append(f"  - **AI angle:** {str(aa).strip()}")
-            else:
-                lines.append(f"- {str(item).strip()}")
-        return "\n".join(lines).strip()
-
+        return "\n".join(str(i) for i in x)
     if isinstance(x, dict):
-        # If already structured, just JSON-dump into a code block so it doesn't break MDX
-        return "```json\n" + json.dumps(x, indent=2) + "\n```"
+        return json.dumps(x, ensure_ascii=False, indent=2)
+    return str(x)
 
-    return str(x).strip()
-
-def changed_transcripts() -> list[str]:
-    """
-    In push events: process changed transcript files.
-    In workflow_dispatch: process newest transcript file.
-    In workflow_run: often no 'before' diff; we fall back to newest transcript file.
-    """
-    before = ""
-    sha = os.environ.get("GITHUB_SHA", "")
-
-    # Try reading event payload
-    try:
-        event_path = os.environ.get("GITHUB_EVENT_PATH", "")
-        if event_path and os.path.exists(event_path):
-            with open(event_path, "r", encoding="utf-8") as f:
-                evt = json.load(f)
-            before = (evt.get("before") or "").strip()
-    except Exception:
-        before = ""
-
-    files: list[str] = []
-    if before and sha and before != "0000000000000000000000000000000000000000":
-        try:
-            diff = sh(["git", "diff", "--name-only", before, sha])
-            for line in diff.splitlines():
-                line = line.strip()
-                if DATE_RE.search(line):
-                    files.append(line)
-        except Exception:
-            pass
-
-    if files:
-        return sorted(set(files))
-
-    # fallback: newest transcript
-    candidates = []
-    if os.path.isdir(TRANSCRIPTS_DIR):
-        for fn in os.listdir(TRANSCRIPTS_DIR):
-            if re.match(r"\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
-                full = os.path.join(TRANSCRIPTS_DIR, fn)
-                candidates.append((os.path.getmtime(full), full))
-    candidates.sort(reverse=True)
-    return [candidates[0][1]] if candidates else []
 
 def gen_episode(date_str: str, transcript: str) -> tuple[str, str, str]:
     system = (
         "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
         "reflective, and locally grounded in Palm Springs Coachella. "
-        "Never invent facts, names, numbers, or events. If something isn't in the transcript, omit it."
+        "Output must be clean MDX/markdown with headings and bullet clarity. No hallucinated facts."
     )
 
     user = f"""
 Episode date: {date_str}
 
+TASK:
 Create a flagship episode page from the transcript.
 
 REQUIREMENTS:
-- Write a strong, human title (not just the date).
-- Length target: 1,200–2,000 words unless the transcript is genuinely short.
-- Use more of the transcript: pull in concrete details, not generic summaries.
-- Include these H2 sections (in this order):
+- Create a strong, human title (not just the date).
+- Include sections with H2 headings:
+  1) What happened (fast summary)
+  2) The local angle (Palm Springs Coachella)
+  3) What to do next (operators / founders)
+  4) AI lens (how AI applies, where it's overhyped, where it's real)
+  5) Quotes (3–6 short, verbatim lines from the transcript; keep them short)
+- Add a short "Key claims (copy/paste citeable)" bullet list (5–9 bullets).
+- Do NOT invent names, meetings, or events not present in transcript.
 
-## What happened (fast summary)
-- 8–12 bullets that reflect the real transcript content.
-
-## The narrative (what Sat is really saying)
-- 3–6 short paragraphs capturing the through-line and vibe.
-
-## Key moments (timestamped if possible)
-- 6–12 bullets. If you see timestamps in the transcript, include them like “(11:14) …”.
-- If no timestamps exist, label them as “Moment 1…Moment 10”.
-
-## The local angle (Palm Springs Coachella)
-- 4–8 bullets, tied to what was actually discussed.
-
-## The operator playbook (what to do next)
-- 8–15 bullets written as actions for founders/operators.
-
-## AI lens (what’s real vs hype)
-- 6–10 bullets. Explicitly separate “Real” vs “Hype” when appropriate.
-
-## Quotes
-- 6–12 short, verbatim lines from the transcript. Keep each quote short.
-
-## Key claims (copy/paste citeable)
-- 10–15 bullets that are directly supported by the transcript.
-
-- Do NOT invent names, meetings, companies, dates, or events that are not in the transcript.
-- If the transcript is vague on a point, say so instead of guessing.
-
-Return ONLY valid JSON:
+Return JSON with:
 {{
   "title": "...",
   "description": "...",
-  "body_markdown": "markdown string"
+  "body_markdown": "..."
 }}
 
 TRANSCRIPT:
@@ -229,97 +172,64 @@ TRANSCRIPT:
 """.strip()
 
     raw = openai_chat(system, user)
-    data = safe_json_loads(extract_json(raw))
-
-    title = str(data.get("title", f"{date_str} Episode")).strip()
-    desc = str(data.get("description", "")).strip()
-    body = normalize_markdown(data.get("body_markdown", ""))
-
+    data = json.loads(extract_json(raw))
+    title = _ensure_str(data.get("title", f"{date_str} Episode")).strip()
+    desc = _ensure_str(data.get("description", "")).strip()
+    body = _ensure_str(data.get("body_markdown", "")).strip()
     return title, desc, body
 
-def render_signals_markdown(date_str: str, signals: list[dict], local_radar: list[str]) -> str:
-    out = []
-    for s in signals:
-        wc = str(s.get("what_changed", "")).strip()
-        wm = str(s.get("why_matters", "")).strip()
-        wn = str(s.get("what_next", "")).strip()
-        aa = str(s.get("ai_angle", "")).strip()
-
-        out.append(f"- **What changed:** {wc}")
-        out.append(f"  - **Why it matters (Palm Springs Coachella):** {wm}")
-        out.append(f"  - **What to do next:** {wn}")
-        out.append(f"  - **AI angle:** {aa}")
-        out.append("")
-
-    out.append("## Local radar")
-    for item in local_radar:
-        out.append(f"- {str(item).strip()}")
-
-    return "\n".join(out).strip()
 
 def gen_signals(date_str: str, transcript: str) -> tuple[str, str, str]:
     system = (
         "You are SunshineFM's signals desk. Tone: crisp, operational, local-first. "
-        "Never invent facts. If the transcript doesn't support a signal, do not include it."
+        "Short sentences. Clear actions. No fluff."
     )
 
     user = f"""
 Signal date: {date_str}
 
-Create a Signals page based ONLY on the transcript.
+TASK:
+Create a Signals page based on the transcript. Think of signals as: what changed, why it matters locally,
+what to build/do next, and the AI angle.
 
-Return ONLY valid JSON with this exact schema:
+REQUIREMENTS:
+- Title format: "{date_str}: Signal Drop"
+- Include 5–10 signals. Each signal must follow this exact mini-template:
+  - What changed:
+  - Why it matters (Palm Springs Coachella):
+  - What to do next:
+  - AI angle:
+- End with "Local radar" (3–7 bullets of things to watch next).
+- Do NOT invent facts.
+
+Return JSON with:
 {{
-  "title": "{date_str}: Signal Drop",
-  "description": "one sentence",
-  "signals": [
-    {{
-      "what_changed": "...",
-      "why_matters": "... (Palm Springs Coachella)",
-      "what_next": "...",
-      "ai_angle": "..."
-    }}
-  ],
-  "local_radar": ["...", "..."]
+  "title": "...",
+  "description": "...",
+  "body_markdown": "..."
 }}
-
-Rules:
-- 5–10 signals
-- local_radar: 3–7 bullets
-- No extra keys, no markdown in JSON values beyond normal punctuation
 
 TRANSCRIPT:
 {transcript}
 """.strip()
 
     raw = openai_chat(system, user)
-    data = safe_json_loads(extract_json(raw))
-
-    title = str(data.get("title", f"{date_str}: Signal Drop")).strip()
-    desc = str(data.get("description", "")).strip()
-    signals = data.get("signals", [])
-    radar = data.get("local_radar", [])
-
-    # If the model still returns something weird, normalize safely.
-    if not isinstance(signals, list):
-        signals = []
-    signals = [s for s in signals if isinstance(s, dict)]
-    if not isinstance(radar, list):
-        radar = []
-    radar = [str(x) for x in radar]
-
-    body = render_signals_markdown(date_str, signals, radar)
+    data = json.loads(extract_json(raw))
+    title = _ensure_str(data.get("title", f"{date_str}: Signal Drop")).strip()
+    desc = _ensure_str(data.get("description", "")).strip()
+    body = _ensure_str(data.get("body_markdown", "")).strip()
     return title, desc, body
 
-def update_today(latest_date: str, episode_title: str):
-  """
-  Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
-  Uses MDX-safe markers: {/* ... */}
-  """
-  episode_link = f"/intelligence/episodes/{latest_date}"
-  signals_link = f"/intelligence/signals/{latest_date}-signals"
 
-  block = f"""{{/*AUTO:latest-start*/}}
+def update_today(latest_date: str, episode_title: str):
+    """
+    Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
+    Uses MDX-safe markers: {/* ... */}
+    """
+    episode_link = f"/intelligence/episodes/{latest_date}"
+    signals_link = f"/intelligence/signals/{latest_date}-signals"
+
+    block = f"""{{/*AUTO:latest-start*/}}
 ## Latest flagship
 - [{latest_date}: {episode_title}]({episode_link})
 
@@ -328,30 +238,73 @@ def update_today(latest_date: str, episode_title: str):
 {{/*AUTO:latest-end*/}}
 """
 
-  existing = ""
-  if os.path.exists(TODAY_PATH):
-    existing = read_text(TODAY_PATH)
+    existing = ""
+    if os.path.exists(TODAY_PATH):
+        existing = read_text(TODAY_PATH)
 
-  # Replace existing AUTO block if present
-  if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
-    new = re.sub(
-      r"\{\/*AUTO:latest-start\*\/\}.*?\{\/*AUTO:latest-end\*\/\}",
-      block.strip(),
-      existing,
-      flags=re.DOTALL,
-    )
-    write_text(TODAY_PATH, new)
-    return
+    if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
+        new = re.sub(
+            r"\{\/*AUTO:latest-start\*\/\}.*?\{\/*AUTO:latest-end\*\/\}",
+            block.strip(),
+            existing,
+            flags=re.DOTALL,
+        )
+        write_text(TODAY_PATH, new)
+        return
 
-  # Otherwise append (or create)
-  if existing:
-    write_text(TODAY_PATH, existing.rstrip() + "\n\n" + block)
-  else:
-    minimal = f"""---
+    if existing:
+        write_text(TODAY_PATH, existing.rstrip() + "\n\n" + block)
+    else:
+        minimal = f"""---
 title: "Today"
 description: "The latest SunshineFM intelligence for Palm Springs Coachella: newest flagship, newest signals, and transcript-backed links."
 ---
 
 {block}
 """
-    write_text(TODAY_PATH, minimal)
+        write_text(TODAY_PATH, minimal)
+
+
+def main():
+    ensure_dirs()
+
+    files = changed_transcripts()
+    if not files:
+        print("No transcript files found to process.")
+        return
+
+    for path in files:
+        # Normalize match for both "transcripts/..." and bare "transcripts/..."
+        rel = path.replace("\\", "/")
+        if rel.startswith("./"):
+            rel = rel[2:]
+
+        m = DATE_RE.match(rel)
+        if not m and os.path.isfile(path) and path.startswith("transcripts/"):
+            m = DATE_RE.match(path)
+
+        if not m:
+            print(f"Skipping non-matching file: {path}")
+            continue
+
+        date_str = m.group(1)
+
+        transcript_path = path if os.path.isfile(path) else os.path.join(".", rel)
+        transcript = read_text(transcript_path)
+
+        ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
+        sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
+
+        episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
+        signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+
+        write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body + "\n")
+        write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body + "\n")
+
+        update_today(date_str, ep_title)
+
+        print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
+
+
+if __name__ == "__main__":
+    main()
