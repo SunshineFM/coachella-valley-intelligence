@@ -250,7 +250,7 @@ def make_transcript_page(date_str: str, transcript: str) -> str:
 def date_from_path(path: str) -> str:
 m = DATE_RE.match(path)
 if not m:
-return “”
+return "\n"
 return m.group(1)
 
 def write_outputs(date_str: str, transcript: str) -> None:
