@@ -10,6 +10,11 @@ on:
     types: [completed]
 
   workflow_dispatch:
+    inputs:
+      date:
+        description: "Transcript date to generate (YYYY-MM-DD). Leave blank to auto-detect."
+        required: false
+        default: ""
 
 jobs:
   generate:
