@@ -214,8 +214,7 @@ TRANSCRIPT:
 
   raw = openai_chat(system, user)
   data = json.loads(extract_json(raw))
-  return data["title"], data["description"], data["body_markdown"]
-
+  return as_text(data.get("title")), as_text(data.get("description")), as_text(data.get("body_markdown"))
 
 def gen_signals(date_str: str, transcript: str) -> tuple[str, str, str]:
   system = (
@@ -254,8 +253,7 @@ TRANSCRIPT:
 
   raw = openai_chat(system, user)
   data = json.loads(extract_json(raw))
-  return data["title"], data["description"], data["body_markdown"]
-
+  return as_text(data.get("title")), as_text(data.get("description")), as_text(data.get("body_markdown"))
 
 def update_today(latest_date: str, episode_title: str):
   """
