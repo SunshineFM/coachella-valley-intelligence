@@ -274,33 +274,34 @@ print(f"- {signals_path}")
 print(f"- {transcript_page_path}")
 
 def main() -> None:
-ensure_dirs()
+    ensure_dirs()
 
-files = changed_transcripts()
-if not files:
-    print("No transcript files found to process.")
-    return
+    files = changed_transcripts()
+    if not files:
+        print("No transcript files found to process.")
+        return
 
-# Normalize to "transcripts/...." relative paths
-norm_files: List[str] = []
-for p in files:
-    p = p.replace("\\", "/")
-    if p.startswith("./"):
-        p = p[2:]
-    norm_files.append(p)
+    # Normalize to "transcripts/...." relative paths
+    norm_files = []
+    for p in files:
+        p = p.replace("\\", "/")
+        if p.startswith("./"):
+            p = p[2:]
+        norm_files.append(p)
 
-for path in norm_files:
-    date_str = date_from_path(path)
-    if not date_str:
-        print(f"Skipping non-matching file: {path}")
-        continue
+    for path in norm_files:
+        date_str = date_from_path(path)
+        if not date_str:
+            print(f"Skipping non-matching file: {path}")
+            continue
 
-    transcript = read_text(path)
-    if not transcript.strip():
-        print(f"Skipping empty transcript: {path}")
-        continue
+        transcript = read_text(path)
+        if not transcript.strip():
+            print(f"Skipping empty transcript: {path}")
+            continue
 
-    write_outputs(date_str, transcript)
+        write_outputs(date_str, transcript)
 
-    if name == “main”:
-main()
+
+if __name__ == "__main__":
+    main()
