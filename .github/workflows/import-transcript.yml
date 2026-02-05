@@ -38,12 +38,15 @@ jobs:
           ls -lah "transcripts/${DATE}-raw.txt"
           head -n 5 "transcripts/${DATE}-raw.txt" || true
 
-      - name: Commit changes (if any)
+      - name: Configure git identity
         run: |
           set -euo pipefail
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
+      - name: Commit changes (if any)
+        run: |
+          set -euo pipefail
           git add transcripts/*.txt || true
 
           if git diff --cached --quiet; then
@@ -53,9 +56,24 @@ jobs:
 
           git commit -m "chore: import transcript ${{ inputs.date }} from sunshinefm-website"
 
-      - name: Sync with remote main and push
+      - name: Rebase onto latest main and push (retry)
         run: |
           set -euo pipefail
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i: syncing with origin/main..."
+            git fetch origin main
+            git rebase origin/main || (git rebase --abort && exit 1)
+
+            echo "Attempt $i: pushing..."
+            if git push origin HEAD:main; then
+              echo "Push succeeded."
+              exit 0
+            fi
+
+            echo "Push failed (someone else updated main). Sleeping briefly and retrying..."
+            sleep $((2*i))
+          done
+
+          echo "Push failed after 5 attempts."
+          exit 1
