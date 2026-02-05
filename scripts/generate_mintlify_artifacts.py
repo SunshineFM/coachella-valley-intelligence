@@ -183,16 +183,39 @@ Episode date: {date_str}
 
 Create a flagship episode page from the transcript.
 
-Requirements:
-- Strong human title (not just the date)
-- H2 sections:
-  1) What happened (fast summary)
-  2) The local angle (Palm Springs Coachella)
-  3) What to do next (operators / founders)
-  4) AI lens (what's real vs hype, applied locally)
-  5) Quotes (3–6 short verbatim lines from transcript)
-- "Key claims (copy/paste citeable)" bullet list (5–9)
-- Do not invent anything
+REQUIREMENTS:
+- Write a strong, human title (not just the date).
+- Length target: 1,200–2,000 words unless the transcript is genuinely short.
+- Use more of the transcript: pull in concrete details, not generic summaries.
+- Include these H2 sections (in this order):
+
+## What happened (fast summary)
+- 8–12 bullets that reflect the real transcript content.
+
+## The narrative (what Sat is really saying)
+- 3–6 short paragraphs capturing the through-line and vibe.
+
+## Key moments (timestamped if possible)
+- 6–12 bullets. If you see timestamps in the transcript, include them like “(11:14) …”.
+- If no timestamps exist, label them as “Moment 1…Moment 10”.
+
+## The local angle (Palm Springs Coachella)
+- 4–8 bullets, tied to what was actually discussed.
+
+## The operator playbook (what to do next)
+- 8–15 bullets written as actions for founders/operators.
+
+## AI lens (what’s real vs hype)
+- 6–10 bullets. Explicitly separate “Real” vs “Hype” when appropriate.
+
+## Quotes
+- 6–12 short, verbatim lines from the transcript. Keep each quote short.
+
+## Key claims (copy/paste citeable)
+- 10–15 bullets that are directly supported by the transcript.
+
+- Do NOT invent names, meetings, companies, dates, or events that are not in the transcript.
+- If the transcript is vague on a point, say so instead of guessing.
 
 Return ONLY valid JSON:
 {{
