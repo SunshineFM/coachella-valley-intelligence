@@ -142,6 +142,16 @@ description: "{description}"
 ---
 """
 
+def as_text(x) -> str:
+  """
+  Coerce model output fields into strings.
+  Sometimes the model returns arrays for markdown; join them safely.
+  """
+  if x is None:
+    return ""
+  if isinstance(x, list):
+    return "\n".join(str(i) for i in x).strip()
+  return str(x).strip()
 
 def extract_json(text: str) -> str:
   """
