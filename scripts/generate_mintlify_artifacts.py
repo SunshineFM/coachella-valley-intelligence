@@ -315,74 +315,45 @@ def update_today(latest_date: str, episode_title: str):
   """
   Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
   Uses markers. If missing, appends a minimal block.
+
+  IMPORTANT: For Mintlify/MDX, use MDX comments: {/* ... */}
   """
   episode_link = f"/intelligence/episodes/{latest_date}"
   signals_link = f"/intelligence/signals/{latest_date}-signals"
 
-  block = f"""{'{/*AUTO:latest-start*/}'}
+  block = f"""{{/*AUTO:latest-start*/}}
 ## Latest flagship
 - [{latest_date}: {episode_title}]({episode_link})
 
 ## Latest signals
 - [{latest_date}: Signal Drop]({signals_link})
-{'{/*AUTO:latest-end*/}'}
+{{/*AUTO:latest-end*/}}
 """
 
   existing = ""
   if os.path.exists(TODAY_PATH):
     existing = read_text(TODAY_PATH)
 
+  # Replace existing AUTO block if present
   if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
     new = re.sub(
-      r"\{/\*AUTO:latest-start\*/\}.*?\{/\*AUTO:latest-end\*/\}",
+      r"\{\/*AUTO:latest-start\*\/\}.*?\{\/*AUTO:latest-end\*\/\}",
       block.strip(),
       existing,
       flags=re.DOTALL,
     )
     write_text(TODAY_PATH, new)
+    return
+
+  # Otherwise append (or create)
+  if existing:
+    write_text(TODAY_PATH, existing.rstrip() + "\n\n" + block)
   else:
-    # If today.mdx exists, append; otherwise create a minimal page
-    if existing:
-      write_text(TODAY_PATH, existing + "\n\n" + block)
-    else:
-      minimal = f"""---
+    minimal = f"""---
 title: "Today"
-description: "The latest SunshineFM intelligence for Palm Springs Coachella."
+description: "The latest SunshineFM intelligence for Palm Springs Coachella: newest flagship, newest signals, and transcript-backed links."
 ---
 
 {block}
 """
-      write_text(TODAY_PATH, minimal)
-
-def main():
-    ensure_dirs()
-
-    files = changed_transcripts()
-    if not files:
-        print("No transcript files found to process.")
-        return
-
-    for path in files:
-        m = DATE_RE.search(path)
-        if not m:
-            print(f"Skipping non-matching file: {path}")
-            continue
-
-        date_str = m.group(1)
-        transcript = read_text(path)
-
-        ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
-        sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
-
-        episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
-        signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
-
-        write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body + "\n")
-        write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body + "\n")
-
-        update_today(date_str, ep_title)
-
-        print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
-
-if __name__ == "__main__":
-    main()
+    write_text(TODAY_PATH, minimal)
