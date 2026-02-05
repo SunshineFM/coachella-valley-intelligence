@@ -151,6 +151,18 @@ def extract_json(text: str) -> str:
     raise ValueError("Could not find JSON in model output.")
   return m.group(0)
 
+def normalize_text(x) -> str:
+  # OpenAI sometimes returns arrays for long fields; make it safe.
+  if x is None:
+    return ""
+  if isinstance(x, str):
+    return x
+  if isinstance(x, list):
+    return "\n".join(str(i) for i in x)
+  if isinstance(x, dict):
+    # last resort: stringify dict cleanly
+    return json.dumps(x, ensure_ascii=False, indent=2)
+  return str(x)
 
 def gen_episode(date_str: str, transcript: str) -> tuple[str, str, str]:
   system = (
@@ -180,9 +192,9 @@ REQUIREMENTS:
 
 Return JSON with:
 {{
-  "title": "...",
-  "description": "...",
-  "body_markdown": "..."
+  normalize_text(data.get("title")),
+  normalize_text(data.get("description")),
+  normalize_text(data.get("body_markdown")),
 }}
 
 TRANSCRIPT:
@@ -220,9 +232,9 @@ REQUIREMENTS:
 
 Return JSON with:
 {{
-  "title": "...",
-  "description": "...",
-  "body_markdown": "..."
+  normalize_text(data.get("title")),
+  normalize_text(data.get("description")),
+  normalize_text(data.get("body_markdown")),
 }}
 
 TRANSCRIPT:
