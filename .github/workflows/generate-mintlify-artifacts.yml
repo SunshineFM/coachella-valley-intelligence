@@ -1,21 +1,26 @@
 name: Generate Mintlify artifacts from transcripts
 
 on:
-  push:
-    paths:
-      - "transcripts/*-raw.txt"
+  workflow_run:
+    workflows: ["Import transcript from sunshinefm-website"]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   generate:
+    # Only run when the import workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo at imported commit
         uses: actions/checkout@v4
         with:
+          # Checkout the exact commit created by the import workflow run
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Set up Python
