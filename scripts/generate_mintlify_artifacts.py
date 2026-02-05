@@ -15,255 +15,284 @@ TODAY_PATH = os.path.join("intelligence", "today.mdx")
 
 DATE_RE = re.compile(r"transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
 
-
 def sh(cmd: list[str]) -> str:
-  return subprocess.check_output(cmd, text=True).strip()
-
+    return subprocess.check_output(cmd, text=True).strip()
 
 def openai_chat(system: str, user: str) -> str:
-  if not API_KEY:
-    raise RuntimeError("Missing OPENAI_API_KEY secret in GitHub Actions.")
+    if not API_KEY:
+        raise RuntimeError("Missing OPENAI_API_KEY secret in GitHub Actions.")
 
-  payload = {
-    "model": MODEL,
-    "messages": [
-      {"role": "system", "content": system},
-      {"role": "user", "content": user},
-    ],
-    "temperature": 0.2,
-    "response_format": {"type": "json_object"},
-  }
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.4,
+    }
 
-  req = urllib.request.Request(
-    "https://api.openai.com/v1/chat/completions",
-    data=json.dumps(payload).encode("utf-8"),
-    headers={
-      "Authorization": f"Bearer {API_KEY}",
-      "Content-Type": "application/json",
-    },
-    method="POST",
-  )
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
 
-  with urllib.request.urlopen(req) as resp:
-    data = json.loads(resp.read().decode("utf-8"))
-    return data["choices"][0]["message"]["content"].strip()
-
+    with urllib.request.urlopen(req) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        return data["choices"][0]["message"]["content"].strip()
 
 def ensure_dirs():
-  os.makedirs(EPISODES_DIR, exist_ok=True)
-  os.makedirs(SIGNALS_DIR, exist_ok=True)
-
-
-def changed_transcripts() -> list[str]:
-  """
-  Determine which transcript(s) to process.
-
-  Priority:
-  1) If this run is on a commit that added transcript(s), use: git diff HEAD~1..HEAD
-     (works great for workflow_run, because the import workflow makes a commit)
-  2) If push event gives before/sha, use that diff
-  3) Fallback: process any transcripts that do NOT yet have corresponding episode+signals files
-  """
-  files: list[str] = []
-
-  # 1) Most reliable for workflow_run: what changed in *this* commit
-  try:
-    diff = sh(["git", "diff", "--name-only", "HEAD~1", "HEAD"])
-    for line in diff.splitlines():
-      line = line.strip()
-      if DATE_RE.search(line):
-        files.append(line)
-  except Exception:
-    pass
-
-  if files:
-    return sorted(set(files))
-
-  # 2) Try push-style before/sha (if present)
-  before = os.environ.get("GITHUB_EVENT_BEFORE", "")
-  sha = os.environ.get("GITHUB_SHA", "")
-
-  # Try to read the GitHub event json to get "before"
-  try:
-    event_path = os.environ.get("GITHUB_EVENT_PATH", "")
-    if event_path and os.path.exists(event_path):
-      with open(event_path, "r", encoding="utf-8") as f:
-        evt = json.load(f)
-      before = evt.get("before", before) or before
-  except Exception:
-    pass
-
-  if before and sha and before != "0000000000000000000000000000000000000000":
-    try:
-      diff = sh(["git", "diff", "--name-only", before, sha])
-      for line in diff.splitlines():
-        line = line.strip()
-        if DATE_RE.search(line):
-          files.append(line)
-    except Exception:
-      pass
-
-  if files:
-    return sorted(set(files))
-
-  # 3) Fallback: generate for any transcript missing its Mintlify outputs
-  candidates: list[str] = []
-  if os.path.isdir(TRANSCRIPTS_DIR):
-    for fn in os.listdir(TRANSCRIPTS_DIR):
-      if fn.endswith("-raw.txt") and re.match(r"\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
-        date_str = fn.split("-raw.txt")[0]
-        ep_out = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
-        sig_out = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
-        if not (os.path.exists(ep_out) and os.path.exists(sig_out)):
-          candidates.append(os.path.join(TRANSCRIPTS_DIR, fn))
-
-  # Process oldest missing first (more stable)
-  candidates.sort()
-  return candidates
-
+    os.makedirs(EPISODES_DIR, exist_ok=True)
+    os.makedirs(SIGNALS_DIR, exist_ok=True)
 
 def read_text(path: str) -> str:
-  with open(path, "r", encoding="utf-8", errors="ignore") as f:
-    return f.read().strip()
-
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read().strip()
 
 def write_text(path: str, content: str):
-  os.makedirs(os.path.dirname(path), exist_ok=True)
-  with open(path, "w", encoding="utf-8") as f:
-    f.write(content.rstrip() + "\n")
-
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content.rstrip() + "\n")
 
 def mdx_frontmatter(title: str, description: str) -> str:
-  title = title.replace('"', '\\"').strip()
-  description = description.replace('"', '\\"').strip()
-  return f"""---
+    title = str(title).replace('"', '\\"').strip()
+    description = str(description).replace('"', '\\"').strip()
+    return f"""---
 title: "{title}"
 description: "{description}"
 ---
 """
 
-def as_text(x) -> str:
-  """
-  Coerce model output fields into strings.
-  Sometimes the model returns arrays for markdown; join them safely.
-  """
-  if x is None:
-    return ""
-  if isinstance(x, list):
-    return "\n".join(str(i) for i in x).strip()
-  return str(x).strip()
-
 def extract_json(text: str) -> str:
-  """
-  Be forgiving if the model wraps JSON in text. Grab the first {...} block.
-  """
-  m = re.search(r"\{.*\}", text, flags=re.DOTALL)
-  if not m:
-    raise ValueError("Could not find JSON in model output.")
-  return m.group(0)
+    """
+    Extract the first JSON object from a model response.
+    Works even if wrapped in prose or code fences.
+    """
+    # Strip code fences if present
+    text = re.sub(r"^```(json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE | re.MULTILINE)
 
-def normalize_text(x) -> str:
-  # OpenAI sometimes returns arrays for long fields; make it safe.
-  if x is None:
-    return ""
-  if isinstance(x, str):
-    return x
-  if isinstance(x, list):
-    return "\n".join(str(i) for i in x)
-  if isinstance(x, dict):
-    # last resort: stringify dict cleanly
-    return json.dumps(x, ensure_ascii=False, indent=2)
-  return str(x)
+    # Find first '{' and last '}' (best-effort)
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError("Could not find JSON object in model output.")
+    return text[start : end + 1]
+
+def safe_json_loads(raw: str) -> dict:
+    """
+    Parse JSON with a small retry that asks the model to repair JSON if needed.
+    """
+    try:
+        return json.loads(raw)
+    except Exception:
+        fixer_system = "You repair JSON. Output ONLY valid JSON. No markdown. No commentary."
+        fixer_user = f"Fix this into valid JSON:\n\n{raw}"
+        fixed = openai_chat(fixer_system, fixer_user)
+        fixed_obj = extract_json(fixed)
+        return json.loads(fixed_obj)
+
+def normalize_markdown(x) -> str:
+    """
+    Guarantee we return a markdown string.
+    If the model returns a list/dict, convert it into readable markdown.
+    """
+    if x is None:
+        return ""
+    if isinstance(x, str):
+        return x.strip()
+
+    # If signals accidentally came back as list-of-dicts, format them.
+    if isinstance(x, list):
+        lines = []
+        for item in x:
+            if isinstance(item, dict):
+                wc = item.get("What changed") or item.get("what_changed") or item.get("whatChanged") or ""
+                wm = item.get("Why it matters (Palm Springs Coachella)") or item.get("why_matters") or item.get("whyMatters") or ""
+                wn = item.get("What to do next") or item.get("what_next") or item.get("whatNext") or ""
+                aa = item.get("AI angle") or item.get("ai_angle") or item.get("aiAngle") or ""
+                lines.append(f"- **What changed:** {str(wc).strip()}")
+                lines.append(f"  - **Why it matters (Palm Springs Coachella):** {str(wm).strip()}")
+                lines.append(f"  - **What to do next:** {str(wn).strip()}")
+                lines.append(f"  - **AI angle:** {str(aa).strip()}")
+            else:
+                lines.append(f"- {str(item).strip()}")
+        return "\n".join(lines).strip()
+
+    if isinstance(x, dict):
+        # If already structured, just JSON-dump into a code block so it doesn't break MDX
+        return "```json\n" + json.dumps(x, indent=2) + "\n```"
+
+    return str(x).strip()
+
+def changed_transcripts() -> list[str]:
+    """
+    In push events: process changed transcript files.
+    In workflow_dispatch: process newest transcript file.
+    In workflow_run: often no 'before' diff; we fall back to newest transcript file.
+    """
+    before = ""
+    sha = os.environ.get("GITHUB_SHA", "")
+
+    # Try reading event payload
+    try:
+        event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+        if event_path and os.path.exists(event_path):
+            with open(event_path, "r", encoding="utf-8") as f:
+                evt = json.load(f)
+            before = (evt.get("before") or "").strip()
+    except Exception:
+        before = ""
+
+    files: list[str] = []
+    if before and sha and before != "0000000000000000000000000000000000000000":
+        try:
+            diff = sh(["git", "diff", "--name-only", before, sha])
+            for line in diff.splitlines():
+                line = line.strip()
+                if DATE_RE.search(line):
+                    files.append(line)
+        except Exception:
+            pass
+
+    if files:
+        return sorted(set(files))
+
+    # fallback: newest transcript
+    candidates = []
+    if os.path.isdir(TRANSCRIPTS_DIR):
+        for fn in os.listdir(TRANSCRIPTS_DIR):
+            if re.match(r"\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
+                full = os.path.join(TRANSCRIPTS_DIR, fn)
+                candidates.append((os.path.getmtime(full), full))
+    candidates.sort(reverse=True)
+    return [candidates[0][1]] if candidates else []
 
 def gen_episode(date_str: str, transcript: str) -> tuple[str, str, str]:
-  system = (
-    "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
-    "reflective, and locally grounded in Palm Springs Coachella. "
-    "Output must be clean MDX/markdown with headings and bullet clarity. "
-    "Do not hallucinate facts. If the transcript does not contain a detail, omit it."
-  )
+    system = (
+        "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
+        "reflective, and locally grounded in Palm Springs Coachella. "
+        "Never invent facts, names, numbers, or events. If something isn't in the transcript, omit it."
+    )
 
-  user = f"""
+    user = f"""
 Episode date: {date_str}
 
-TASK:
 Create a flagship episode page from the transcript.
 
-REQUIREMENTS:
-- Create a strong, human title (not just the date).
-- Include sections with H2 headings:
+Requirements:
+- Strong human title (not just the date)
+- H2 sections:
   1) What happened (fast summary)
   2) The local angle (Palm Springs Coachella)
   3) What to do next (operators / founders)
-  4) AI lens (how AI applies, where it's overhyped, where it's real)
-  5) Quotes (3–6 short, verbatim lines from the transcript; keep them short)
-- Add a short "Key claims (copy/paste citeable)" bullet list (5–9 bullets).
-- Do NOT invent names, meetings, companies, events, or numbers not present in transcript.
-- If the transcript is empty/garbled, return a minimal page that says "Transcript unreadable" and nothing else.
+  4) AI lens (what's real vs hype, applied locally)
+  5) Quotes (3–6 short verbatim lines from transcript)
+- "Key claims (copy/paste citeable)" bullet list (5–9)
+- Do not invent anything
 
-Return JSON with:
+Return ONLY valid JSON:
 {{
-  normalize_text(data.get("title")),
-  normalize_text(data.get("description")),
-  normalize_text(data.get("body_markdown")),
+  "title": "...",
+  "description": "...",
+  "body_markdown": "markdown string"
 }}
 
 TRANSCRIPT:
 {transcript}
 """.strip()
 
-  raw = openai_chat(system, user)
-  data = json.loads(extract_json(raw))
-  return as_text(data.get("title")), as_text(data.get("description")), as_text(data.get("body_markdown"))
+    raw = openai_chat(system, user)
+    data = safe_json_loads(extract_json(raw))
+
+    title = str(data.get("title", f"{date_str} Episode")).strip()
+    desc = str(data.get("description", "")).strip()
+    body = normalize_markdown(data.get("body_markdown", ""))
+
+    return title, desc, body
+
+def render_signals_markdown(date_str: str, signals: list[dict], local_radar: list[str]) -> str:
+    out = []
+    for s in signals:
+        wc = str(s.get("what_changed", "")).strip()
+        wm = str(s.get("why_matters", "")).strip()
+        wn = str(s.get("what_next", "")).strip()
+        aa = str(s.get("ai_angle", "")).strip()
+
+        out.append(f"- **What changed:** {wc}")
+        out.append(f"  - **Why it matters (Palm Springs Coachella):** {wm}")
+        out.append(f"  - **What to do next:** {wn}")
+        out.append(f"  - **AI angle:** {aa}")
+        out.append("")
+
+    out.append("## Local radar")
+    for item in local_radar:
+        out.append(f"- {str(item).strip()}")
+
+    return "\n".join(out).strip()
 
 def gen_signals(date_str: str, transcript: str) -> tuple[str, str, str]:
-  system = (
-    "You are SunshineFM's signals desk. Tone: crisp, operational, local-first. "
-    "Short sentences. Clear actions. No fluff. "
-    "Do not hallucinate. If unsure, say 'Unclear from transcript'."
-  )
+    system = (
+        "You are SunshineFM's signals desk. Tone: crisp, operational, local-first. "
+        "Never invent facts. If the transcript doesn't support a signal, do not include it."
+    )
 
-  user = f"""
+    user = f"""
 Signal date: {date_str}
 
-TASK:
-Create a Signals page based on the transcript. Think of signals as: what changed, why it matters locally,
-what to build/do next, and the AI angle.
+Create a Signals page based ONLY on the transcript.
 
-REQUIREMENTS:
-- Title format: "{date_str}: Signal Drop"
-- Include 5–10 signals. Each signal must follow this exact mini-template:
-  - What changed:
-  - Why it matters (Palm Springs Coachella):
-  - What to do next:
-  - AI angle:
-- End with "Local radar" (3–7 bullets of things to watch next).
-- Do NOT invent facts. If a signal depends on missing info, mark it as "Unclear from transcript".
-
-Return JSON with:
+Return ONLY valid JSON with this exact schema:
 {{
-  normalize_text(data.get("title")),
-  normalize_text(data.get("description")),
-  normalize_text(data.get("body_markdown")),
+  "title": "{date_str}: Signal Drop",
+  "description": "one sentence",
+  "signals": [
+    {{
+      "what_changed": "...",
+      "why_matters": "... (Palm Springs Coachella)",
+      "what_next": "...",
+      "ai_angle": "..."
+    }}
+  ],
+  "local_radar": ["...", "..."]
 }}
+
+Rules:
+- 5–10 signals
+- local_radar: 3–7 bullets
+- No extra keys, no markdown in JSON values beyond normal punctuation
 
 TRANSCRIPT:
 {transcript}
 """.strip()
 
-  raw = openai_chat(system, user)
-  data = json.loads(extract_json(raw))
-  return as_text(data.get("title")), as_text(data.get("description")), as_text(data.get("body_markdown"))
+    raw = openai_chat(system, user)
+    data = safe_json_loads(extract_json(raw))
+
+    title = str(data.get("title", f"{date_str}: Signal Drop")).strip()
+    desc = str(data.get("description", "")).strip()
+    signals = data.get("signals", [])
+    radar = data.get("local_radar", [])
+
+    # If the model still returns something weird, normalize safely.
+    if not isinstance(signals, list):
+        signals = []
+    signals = [s for s in signals if isinstance(s, dict)]
+    if not isinstance(radar, list):
+        radar = []
+    radar = [str(x) for x in radar]
+
+    body = render_signals_markdown(date_str, signals, radar)
+    return title, desc, body
 
 def update_today(latest_date: str, episode_title: str):
-  """
-  Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
-  Uses markers. If missing, appends a minimal block.
-  """
-  episode_link = f"/intelligence/episodes/{latest_date}"
-  signals_link = f"/intelligence/signals/{latest_date}-signals"
+    episode_link = f"/intelligence/episodes/{latest_date}"
+    signals_link = f"/intelligence/signals/{latest_date}-signals"
 
-  block = f"""<!--AUTO:latest-start-->
+    block = f"""<!--AUTO:latest-start-->
 ## Latest flagship
 - [{latest_date}: {episode_title}]({episode_link})
 
@@ -272,72 +301,58 @@ def update_today(latest_date: str, episode_title: str):
 <!--AUTO:latest-end-->
 """
 
-  existing = ""
-  if os.path.exists(TODAY_PATH):
-    existing = read_text(TODAY_PATH)
+    existing = read_text(TODAY_PATH) if os.path.exists(TODAY_PATH) else ""
 
-  if "<!--AUTO:latest-start-->" in existing and "<!--AUTO:latest-end-->" in existing:
-    new = re.sub(
-      r"<!--AUTO:latest-start-->.*?<!--AUTO:latest-end-->",
-      block.strip(),
-      existing,
-      flags=re.DOTALL,
-    )
-    write_text(TODAY_PATH, new)
-  else:
-    if existing:
-      write_text(TODAY_PATH, existing + "\n\n" + block)
+    if "<!--AUTO:latest-start-->" in existing and "<!--AUTO:latest-end-->" in existing:
+        new = re.sub(
+            r"<!--AUTO:latest-start-->.*?<!--AUTO:latest-end-->",
+            block.strip(),
+            existing,
+            flags=re.DOTALL,
+        )
+        write_text(TODAY_PATH, new)
     else:
-      minimal = f"""---
+        if existing:
+            write_text(TODAY_PATH, existing + "\n\n" + block)
+        else:
+            minimal = f"""---
 title: "Today"
 description: "The latest SunshineFM intelligence for Palm Springs Coachella."
 ---
 
 {block}
 """
-      write_text(TODAY_PATH, minimal)
-
+            write_text(TODAY_PATH, minimal)
 
 def main():
-  ensure_dirs()
+    ensure_dirs()
 
-  files = changed_transcripts()
-  if not files:
-    print("No transcript files found to process.")
-    return
+    files = changed_transcripts()
+    if not files:
+        print("No transcript files found to process.")
+        return
 
-  for path in files:
-    norm_path = path.replace("\\", "/")
-    m = DATE_RE.search(norm_path)
-    if not m:
-      print(f"Skipping non-matching file: {path}")
-      continue
+    for path in files:
+        m = DATE_RE.search(path)
+        if not m:
+            print(f"Skipping non-matching file: {path}")
+            continue
 
-    date_str = m.group(1)
-    transcript = read_text(path)
+        date_str = m.group(1)
+        transcript = read_text(path)
 
-    # Basic guardrail: refuse to "summarize" nothing
-    if len(transcript.strip()) < 200:
-      ep_title = f"{date_str}: Transcript unreadable"
-      ep_desc = "Transcript was empty or unreadable; skipping synthesis."
-      ep_body = "## Transcript unreadable\n\nThis transcript file did not contain enough readable text to synthesize."
-      sig_title = f"{date_str}: Signal Drop"
-      sig_desc = "Transcript was empty or unreadable; signals unavailable."
-      sig_body = "## Signals unavailable\n\nUnclear from transcript."
-    else:
-      ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
-      sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
+        ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
+        sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
 
-    episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
-    signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+        episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
+        signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
 
-    write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body.strip() + "\n")
-    write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body.strip() + "\n")
+        write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body + "\n")
+        write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body + "\n")
 
-    update_today(date_str, ep_title)
+        update_today(date_str, ep_title)
 
-    print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
-
+        print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
 
 if __name__ == "__main__":
-  main()
+    main()
