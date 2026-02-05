@@ -236,14 +236,16 @@ def changed_transcripts() -> List[str]:
 def make_transcript_page(date_str: str, transcript: str) -> str:
     title = f"{date_str} Raw Transcript"
     desc = "Raw transcript (source text)."
-    body = f"""
-## Raw transcript
 
-```text
-{wrap_text(transcript, 110)}
+    body = "\n".join([
+        "## Raw transcript",
+        "",
+        "```text",
+        wrap_text(transcript, 110),
+        "```",
+    ])
 
-“””.strip()
-return mdx_frontmatter(title, desc) + “\n” + body + “\n”
+    return mdx_frontmatter(title, desc) + "\n" + body + "\n"
 
 def date_from_path(path: str) -> str:
 m = DATE_RE.match(path)
