@@ -312,40 +312,47 @@ TRANSCRIPT:
     return title, desc, body
 
 def update_today(latest_date: str, episode_title: str):
-    episode_link = f"/intelligence/episodes/{latest_date}"
-    signals_link = f"/intelligence/signals/{latest_date}-signals"
+  """
+  Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
+  Uses markers. If missing, appends a minimal block.
+  """
+  episode_link = f"/intelligence/episodes/{latest_date}"
+  signals_link = f"/intelligence/signals/{latest_date}-signals"
 
-    block = f"""{{/*AUTO:latest-start*/}}
+  block = f"""{'{/*AUTO:latest-start*/}'}
 ## Latest flagship
 - [{latest_date}: {episode_title}]({episode_link})
 
 ## Latest signals
 - [{latest_date}: Signal Drop]({signals_link})
-{{/*AUTO:latest-end*/}}
+{'{/*AUTO:latest-end*/}'}
 """
 
-    existing = read_text(TODAY_PATH) if os.path.exists(TODAY_PATH) else ""
+  existing = ""
+  if os.path.exists(TODAY_PATH):
+    existing = read_text(TODAY_PATH)
 
-      if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
-        new = re.sub(
-            r"\{\/\*AUTO:latest-start\*\/\}.*?\{\/\*AUTO:latest-end\*\/\}",
-            block.strip(),
-            existing,
-            flags=re.DOTALL,
-        )
-        write_text(TODAY_PATH, new)
+  if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
+    new = re.sub(
+      r"\{/\*AUTO:latest-start\*/\}.*?\{/\*AUTO:latest-end\*/\}",
+      block.strip(),
+      existing,
+      flags=re.DOTALL,
+    )
+    write_text(TODAY_PATH, new)
+  else:
+    # If today.mdx exists, append; otherwise create a minimal page
+    if existing:
+      write_text(TODAY_PATH, existing + "\n\n" + block)
     else:
-        if existing:
-            write_text(TODAY_PATH, existing + "\n\n" + block)
-        else:
-            minimal = f"""---
+      minimal = f"""---
 title: "Today"
 description: "The latest SunshineFM intelligence for Palm Springs Coachella."
 ---
 
 {block}
 """
-            write_text(TODAY_PATH, minimal)
+      write_text(TODAY_PATH, minimal)
 
 def main():
     ensure_dirs()
