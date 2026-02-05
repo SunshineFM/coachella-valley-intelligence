@@ -11,9 +11,8 @@ API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
 TRANSCRIPTS_DIR = "transcripts"
 EPISODES_DIR = os.path.join("intelligence", "episodes")
 SIGNALS_DIR = os.path.join("intelligence", "signals")
-TODAY_PATH = os.path.join("intelligence", "today.mdx")
 
-DATE_RE = re.compile(r"^transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
+DATE_RE = re.compile(r"transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
 
 
 def sh(cmd: list[str]) -> str:
@@ -56,17 +55,18 @@ def ensure_dirs():
 def changed_transcripts() -> list[str]:
     """
     In a push event, find which transcript files changed.
-    If workflow_dispatch (no before SHA), fall back to newest transcript file.
+    If workflow_dispatch (or can't diff), fall back to newest transcript file.
     """
     before = ""
     sha = os.environ.get("GITHUB_SHA", "")
 
+    # Try to read GitHub event payload for "before"
     try:
         event_path = os.environ.get("GITHUB_EVENT_PATH", "")
         if event_path and os.path.exists(event_path):
             with open(event_path, "r", encoding="utf-8") as f:
                 evt = json.load(f)
-            before = evt.get("before", "") or ""
+            before = (evt.get("before") or "").strip()
     except Exception:
         before = ""
 
@@ -75,9 +75,8 @@ def changed_transcripts() -> list[str]:
         try:
             diff = sh(["git", "diff", "--name-only", before, sha])
             for line in diff.splitlines():
-                line = line.strip()
-                if DATE_RE.match(line):
-                    files.append(line)
+                if DATE_RE.search(line.strip()):
+                    files.append(line.strip())
         except Exception:
             pass
 
@@ -85,10 +84,10 @@ def changed_transcripts() -> list[str]:
         return sorted(set(files))
 
     # fallback: newest transcript
-    candidates: list[tuple[float, str]] = []
+    candidates = []
     if os.path.isdir(TRANSCRIPTS_DIR):
         for fn in os.listdir(TRANSCRIPTS_DIR):
-            if re.match(r"^\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
+            if re.match(r"\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
                 full = os.path.join(TRANSCRIPTS_DIR, fn)
                 candidates.append((os.path.getmtime(full), full))
     candidates.sort(reverse=True)
@@ -107,8 +106,8 @@ def write_text(path: str, content: str):
 
 
 def mdx_frontmatter(title: str, description: str) -> str:
-    title = str(title).replace('"', '\\"').strip()
-    description = str(description).replace('"', '\\"').strip()
+    title = (title or "").replace('"', '\\"').strip()
+    description = (description or "").replace('"', '\\"').strip()
     return f"""---
 title: "{title}"
 description: "{description}"
@@ -116,31 +115,34 @@ description: "{description}"
 """
 
 
-def extract_json(text: str) -> str:
+def extract_json(text: str) -> dict:
     """
-    Be forgiving if the model wraps JSON in text. Grab the first {...} block.
+    Pull the first JSON object out of model output, then parse.
     """
     m = re.search(r"\{.*\}", text, flags=re.DOTALL)
     if not m:
         raise ValueError("Could not find JSON in model output.")
-    return m.group(0)
+    return json.loads(m.group(0))
 
 
-def _ensure_str(x) -> str:
-    if isinstance(x, str):
-        return x
-    if isinstance(x, list):
-        return "\n".join(str(i) for i in x)
-    if isinstance(x, dict):
-        return json.dumps(x, ensure_ascii=False, indent=2)
-    return str(x)
+def normalize_body(body) -> str:
+    """
+    Sometimes the model returns a list/array. Force it into a string.
+    """
+    if body is None:
+        return ""
+    if isinstance(body, str):
+        return body
+    if isinstance(body, list):
+        return "\n".join(str(x) for x in body)
+    return str(body)
 
 
 def gen_episode(date_str: str, transcript: str) -> tuple[str, str, str]:
     system = (
         "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
         "reflective, and locally grounded in Palm Springs Coachella. "
-        "Output must be clean MDX/markdown with headings and bullet clarity. No hallucinated facts."
+        "Output must be clean Markdown/MDX with headings and bullet clarity. No hallucinated facts."
     )
 
     user = f"""
@@ -172,10 +174,12 @@ TRANSCRIPT:
 """.strip()
 
     raw = openai_chat(system, user)
-    data = json.loads(extract_json(raw))
-    title = _ensure_str(data.get("title", f"{date_str} Episode")).strip()
-    desc = _ensure_str(data.get("description", "")).strip()
-    body = _ensure_str(data.get("body_markdown", "")).strip()
+    data = extract_json(raw)
+
+    title = str(data.get("title", "")).strip() or f"{date_str}: Flagship"
+    desc = str(data.get("description", "")).strip() or f"SunshineFM flagship for {date_str}."
+    body = normalize_body(data.get("body_markdown", "")).strip()
+
     return title, desc, body
 
 
@@ -189,16 +193,15 @@ def gen_signals(date_str: str, transcript: str) -> tuple[str, str, str]:
 Signal date: {date_str}
 
 TASK:
-Create a Signals page based on the transcript. Think of signals as: what changed, why it matters locally,
-what to build/do next, and the AI angle.
+Create a Signals page based on the transcript.
 
 REQUIREMENTS:
 - Title format: "{date_str}: Signal Drop"
 - Include 5–10 signals. Each signal must follow this exact mini-template:
-  - What changed:
-  - Why it matters (Palm Springs Coachella):
-  - What to do next:
-  - AI angle:
+  - **What changed:**
+  - **Why it matters (Palm Springs Coachella):**
+  - **What to do next:**
+  - **AI angle:**
 - End with "Local radar" (3–7 bullets of things to watch next).
 - Do NOT invent facts.
 
@@ -214,55 +217,13 @@ TRANSCRIPT:
 """.strip()
 
     raw = openai_chat(system, user)
-    data = json.loads(extract_json(raw))
-    title = _ensure_str(data.get("title", f"{date_str}: Signal Drop")).strip()
-    desc = _ensure_str(data.get("description", "")).strip()
-    body = _ensure_str(data.get("body_markdown", "")).strip()
+    data = extract_json(raw)
+
+    title = str(data.get("title", "")).strip() or f"{date_str}: Signal Drop"
+    desc = str(data.get("description", "")).strip() or f"Signals for {date_str}."
+    body = normalize_body(data.get("body_markdown", "")).strip()
+
     return title, desc, body
-
-
-def update_today(latest_date: str, episode_title: str):
-    """
-    Update intelligence/today.mdx so 'Latest flagship' + 'Latest signals' point at the newest date.
-    Uses MDX-safe markers: {/* ... */}
-    """
-    episode_link = f"/intelligence/episodes/{latest_date}"
-    signals_link = f"/intelligence/signals/{latest_date}-signals"
-
-    block = f"""{{/*AUTO:latest-start*/}}
-## Latest flagship
-- [{latest_date}: {episode_title}]({episode_link})
-
-## Latest signals
-- [{latest_date}: Signal Drop]({signals_link})
-{{/*AUTO:latest-end*/}}
-"""
-
-    existing = ""
-    if os.path.exists(TODAY_PATH):
-        existing = read_text(TODAY_PATH)
-
-    if "{/*AUTO:latest-start*/}" in existing and "{/*AUTO:latest-end*/}" in existing:
-        new = re.sub(
-            r"\{\/*AUTO:latest-start\*\/\}.*?\{\/*AUTO:latest-end\*\/\}",
-            block.strip(),
-            existing,
-            flags=re.DOTALL,
-        )
-        write_text(TODAY_PATH, new)
-        return
-
-    if existing:
-        write_text(TODAY_PATH, existing.rstrip() + "\n\n" + block)
-    else:
-        minimal = f"""---
-title: "Today"
-description: "The latest SunshineFM intelligence for Palm Springs Coachella: newest flagship, newest signals, and transcript-backed links."
----
-
-{block}
-"""
-        write_text(TODAY_PATH, minimal)
 
 
 def main():
@@ -274,23 +235,13 @@ def main():
         return
 
     for path in files:
-        # Normalize match for both "transcripts/..." and bare "transcripts/..."
-        rel = path.replace("\\", "/")
-        if rel.startswith("./"):
-            rel = rel[2:]
-
-        m = DATE_RE.match(rel)
-        if not m and os.path.isfile(path) and path.startswith("transcripts/"):
-            m = DATE_RE.match(path)
-
+        m = DATE_RE.search(path)
         if not m:
             print(f"Skipping non-matching file: {path}")
             continue
 
         date_str = m.group(1)
-
-        transcript_path = path if os.path.isfile(path) else os.path.join(".", rel)
-        transcript = read_text(transcript_path)
+        transcript = read_text(path)
 
         ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
         sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
@@ -301,9 +252,7 @@ def main():
         write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body + "\n")
         write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body + "\n")
 
-        update_today(date_str, ep_title)
-
-        print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
+        print(f"Generated:\n- {episode_path}\n- {signals_path}")
 
 
 if __name__ == "__main__":
