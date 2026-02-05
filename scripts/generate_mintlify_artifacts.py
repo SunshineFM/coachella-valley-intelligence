@@ -4,7 +4,6 @@ import re
 import json
 import subprocess
 import urllib.request
-from datetime import datetime
 
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
@@ -16,8 +15,10 @@ TODAY_PATH = os.path.join("intelligence", "today.mdx")
 
 DATE_RE = re.compile(r"transcripts/(\d{4}-\d{2}-\d{2})-raw\.txt$")
 
+
 def sh(cmd: list[str]) -> str:
   return subprocess.check_output(cmd, text=True).strip()
+
 
 def openai_chat(system: str, user: str) -> str:
   if not API_KEY:
@@ -46,15 +47,38 @@ def openai_chat(system: str, user: str) -> str:
     data = json.loads(resp.read().decode("utf-8"))
     return data["choices"][0]["message"]["content"].strip()
 
+
 def ensure_dirs():
   os.makedirs(EPISODES_DIR, exist_ok=True)
   os.makedirs(SIGNALS_DIR, exist_ok=True)
 
+
 def changed_transcripts() -> list[str]:
   """
-  In a push event, find which transcript files changed.
-  If workflow_dispatch (no before SHA), fall back to newest transcript file.
+  Determine which transcript(s) to process.
+
+  Priority:
+  1) If this run is on a commit that added transcript(s), use: git diff HEAD~1..HEAD
+     (works great for workflow_run, because the import workflow makes a commit)
+  2) If push event gives before/sha, use that diff
+  3) Fallback: process any transcripts that do NOT yet have corresponding episode+signals files
   """
+  files: list[str] = []
+
+  # 1) Most reliable for workflow_run: what changed in *this* commit
+  try:
+    diff = sh(["git", "diff", "--name-only", "HEAD~1", "HEAD"])
+    for line in diff.splitlines():
+      line = line.strip()
+      if DATE_RE.search(line):
+        files.append(line)
+  except Exception:
+    pass
+
+  if files:
+    return sorted(set(files))
+
+  # 2) Try push-style before/sha (if present)
   before = os.environ.get("GITHUB_EVENT_BEFORE", "")
   sha = os.environ.get("GITHUB_SHA", "")
 
@@ -68,40 +92,47 @@ def changed_transcripts() -> list[str]:
   except Exception:
     pass
 
-  files: list[str] = []
   if before and sha and before != "0000000000000000000000000000000000000000":
     try:
       diff = sh(["git", "diff", "--name-only", before, sha])
       for line in diff.splitlines():
+        line = line.strip()
         if DATE_RE.search(line):
-          files.append(line.strip())
+          files.append(line)
     except Exception:
       pass
 
   if files:
     return sorted(set(files))
 
-  # fallback: newest transcript
-  candidates = []
+  # 3) Fallback: generate for any transcript missing its Mintlify outputs
+  candidates: list[str] = []
   if os.path.isdir(TRANSCRIPTS_DIR):
     for fn in os.listdir(TRANSCRIPTS_DIR):
       if fn.endswith("-raw.txt") and re.match(r"\d{4}-\d{2}-\d{2}-raw\.txt$", fn):
-        full = os.path.join(TRANSCRIPTS_DIR, fn)
-        candidates.append((os.path.getmtime(full), full))
-  candidates.sort(reverse=True)
-  return [candidates[0][1]] if candidates else []
+        date_str = fn.split("-raw.txt")[0]
+        ep_out = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
+        sig_out = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+        if not (os.path.exists(ep_out) and os.path.exists(sig_out)):
+          candidates.append(os.path.join(TRANSCRIPTS_DIR, fn))
+
+  # Process oldest missing first (more stable)
+  candidates.sort()
+  return candidates
+
 
 def read_text(path: str) -> str:
   with open(path, "r", encoding="utf-8", errors="ignore") as f:
     return f.read().strip()
+
 
 def write_text(path: str, content: str):
   os.makedirs(os.path.dirname(path), exist_ok=True)
   with open(path, "w", encoding="utf-8") as f:
     f.write(content.rstrip() + "\n")
 
+
 def mdx_frontmatter(title: str, description: str) -> str:
-  # Mintlify is fine with YAML frontmatter. Keep it simple.
   title = title.replace('"', '\\"').strip()
   description = description.replace('"', '\\"').strip()
   return f"""---
@@ -110,11 +141,23 @@ description: "{description}"
 ---
 """
 
-def gen_episode(date_str: str, transcript: str) -> tuple[str, str]:
+
+def extract_json(text: str) -> str:
+  """
+  Be forgiving if the model wraps JSON in text. Grab the first {...} block.
+  """
+  m = re.search(r"\{.*\}", text, flags=re.DOTALL)
+  if not m:
+    raise ValueError("Could not find JSON in model output.")
+  return m.group(0)
+
+
+def gen_episode(date_str: str, transcript: str) -> tuple[str, str, str]:
   system = (
     "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
     "reflective, and locally grounded in Palm Springs Coachella. "
-    "Output must be clean MDX/markdown with headings and bullet clarity. No hallucinated facts."
+    "Output must be clean MDX/markdown with headings and bullet clarity. "
+    "Do not hallucinate facts. If the transcript does not contain a detail, omit it."
   )
 
   user = f"""
@@ -132,7 +175,8 @@ REQUIREMENTS:
   4) AI lens (how AI applies, where it's overhyped, where it's real)
   5) Quotes (3–6 short, verbatim lines from the transcript; keep them short)
 - Add a short "Key claims (copy/paste citeable)" bullet list (5–9 bullets).
-- Do NOT invent names, meetings, or events not present in transcript.
+- Do NOT invent names, meetings, companies, events, or numbers not present in transcript.
+- If the transcript is empty/garbled, return a minimal page that says "Transcript unreadable" and nothing else.
 
 Return JSON with:
 {{
@@ -149,10 +193,12 @@ TRANSCRIPT:
   data = json.loads(extract_json(raw))
   return data["title"], data["description"], data["body_markdown"]
 
-def gen_signals(date_str: str, transcript: str) -> tuple[str, str]:
+
+def gen_signals(date_str: str, transcript: str) -> tuple[str, str, str]:
   system = (
     "You are SunshineFM's signals desk. Tone: crisp, operational, local-first. "
-    "Short sentences. Clear actions. No fluff."
+    "Short sentences. Clear actions. No fluff. "
+    "Do not hallucinate. If unsure, say 'Unclear from transcript'."
   )
 
   user = f"""
@@ -170,7 +216,7 @@ REQUIREMENTS:
   - What to do next:
   - AI angle:
 - End with "Local radar" (3–7 bullets of things to watch next).
-- Do NOT invent facts.
+- Do NOT invent facts. If a signal depends on missing info, mark it as "Unclear from transcript".
 
 Return JSON with:
 {{
@@ -187,14 +233,6 @@ TRANSCRIPT:
   data = json.loads(extract_json(raw))
   return data["title"], data["description"], data["body_markdown"]
 
-def extract_json(text: str) -> str:
-  """
-  Be forgiving if the model wraps JSON in text. Grab the first {...} block.
-  """
-  m = re.search(r"\{.*\}", text, flags=re.DOTALL)
-  if not m:
-    raise ValueError("Could not find JSON in model output.")
-  return m.group(0)
 
 def update_today(latest_date: str, episode_title: str):
   """
@@ -226,7 +264,6 @@ def update_today(latest_date: str, episode_title: str):
     )
     write_text(TODAY_PATH, new)
   else:
-    # If today.mdx exists, append; otherwise create a minimal page
     if existing:
       write_text(TODAY_PATH, existing + "\n\n" + block)
     else:
@@ -239,6 +276,7 @@ description: "The latest SunshineFM intelligence for Palm Springs Coachella."
 """
       write_text(TODAY_PATH, minimal)
 
+
 def main():
   ensure_dirs()
 
@@ -248,7 +286,8 @@ def main():
     return
 
   for path in files:
-    m = DATE_RE.search(path)
+    norm_path = path.replace("\\", "/")
+    m = DATE_RE.search(norm_path)
     if not m:
       print(f"Skipping non-matching file: {path}")
       continue
@@ -256,21 +295,28 @@ def main():
     date_str = m.group(1)
     transcript = read_text(path)
 
-    # Generate episode + signals
-    ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
-    sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
+    # Basic guardrail: refuse to "summarize" nothing
+    if len(transcript.strip()) < 200:
+      ep_title = f"{date_str}: Transcript unreadable"
+      ep_desc = "Transcript was empty or unreadable; skipping synthesis."
+      ep_body = "## Transcript unreadable\n\nThis transcript file did not contain enough readable text to synthesize."
+      sig_title = f"{date_str}: Signal Drop"
+      sig_desc = "Transcript was empty or unreadable; signals unavailable."
+      sig_body = "## Signals unavailable\n\nUnclear from transcript."
+    else:
+      ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
+      sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
 
-    # Write files
     episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
     signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
 
     write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body.strip() + "\n")
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body.strip() + "\n")
 
-    # Update Today page pointer
     update_today(date_str, ep_title)
 
     print(f"Generated:\n- {episode_path}\n- {signals_path}\n- {TODAY_PATH}")
+
 
 if __name__ == "__main__":
   main()
