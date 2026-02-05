@@ -247,33 +247,42 @@ def make_transcript_page(date_str: str, transcript: str) -> str:
 
     return mdx_frontmatter(title, desc) + "\n" + body + "\n"
 
+
 def date_from_path(path: str) -> str:
-m = DATE_RE.match(path)
-if not m:
-return "\n"
-return m.group(1)
+    m = DATE_RE.match(path)
+    if not m:
+        return ""
+    return m.group(1)
+
 
 def write_outputs(date_str: str, transcript: str) -> None:
-# Generate episode + signals (AI)
-ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
-sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
+    ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
+    sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
 
-# File paths (Mintlify-safe + predictable)
-episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
-signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+    episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
+    signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+    transcript_page_path = os.path.join(TRANSCRIPTS_DIR, f"{date_str}-raw.mdx")
 
-# Raw transcript gets its own Mintlify page (so /transcripts/YYYY-MM-DD-raw works)
-transcript_page_path = os.path.join(TRANSCRIPTS_DIR, f"{date_str}-raw.mdx")
+    write_text(
+        episode_path,
+        mdx_frontmatter(ep_title, ep_desc) + "\n" + (ep_body or "").strip() + "\n",
+    )
 
-# Write
-write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + (ep_body or "").strip() + "\n")
-write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + (sig_body or "").strip() + "\n")
-write_text(transcript_page_path, make_transcript_page(date_str, transcript))
+    write_text(
+        signals_path,
+        mdx_frontmatter(sig_title, sig_desc) + "\n" + (sig_body or "").strip() + "\n",
+    )
 
-print("Generated:")
-print(f"- {episode_path}")
-print(f"- {signals_path}")
-print(f"- {transcript_page_path}")
+    write_text(
+        transcript_page_path,
+        make_transcript_page(date_str, transcript),
+    )
+
+    print("Generated:")
+    print(f"- {episode_path}")
+    print(f"- {signals_path}")
+    print(f"- {transcript_page_path}")
+
 
 def main() -> None:
     ensure_dirs()
@@ -283,7 +292,6 @@ def main() -> None:
         print("No transcript files found to process.")
         return
 
-    # Normalize to "transcripts/...." relative paths
     norm_files = []
     for p in files:
         p = p.replace("\\", "/")
