@@ -31,12 +31,12 @@ jobs:
           SRC_PATH="${{ inputs.source_path }}"
           RAW_URL="https://raw.githubusercontent.com/SunshineFM/sunshinefm-website/main/${SRC_PATH}"
 
-          mkdir -p transcripts
-          curl -L "$RAW_URL" -o "transcripts/${DATE}-raw.txt"
+          mkdir -p transcripts/source
+          curl -L "$RAW_URL" -o "transcripts/source/${DATE}.txt"
 
           echo "Downloaded:"
-          ls -lah "transcripts/${DATE}-raw.txt"
-          head -n 5 "transcripts/${DATE}-raw.txt" || true
+          ls -lah "transcripts/source/${DATE}.txt"
+          head -n 5 "transcripts/source/${DATE}.txt" || true
 
       - name: Configure git identity
         run: |
@@ -47,7 +47,7 @@ jobs:
       - name: Commit changes (if any)
         run: |
           set -euo pipefail
-          git add transcripts/*.txt || true
+          git add transcripts/source/*.txt || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
