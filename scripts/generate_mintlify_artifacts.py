@@ -55,6 +55,11 @@ def claude_chat(system: str, user: str) -> str:
         return ""
 
 
+
+def sanitize_mdx(text: str) -> str:
+    """Escape dollar signs so Mintlify MDX does not treat them as LaTeX math."""
+    return re.sub(r"(?<!\\)\$", r"\\$", text)
+
 def ensure_dirs() -> None:
     os.makedirs(EPISODES_DIR, exist_ok=True)
     os.makedirs(SIGNALS_DIR, exist_ok=True)
@@ -70,7 +75,7 @@ def read_text(path: str) -> str:
 def write_text(path: str, content: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(content.rstrip() + "\n")
+        f.write(sanitize_mdx(content.rstrip()) + "\n")
 
 
 def mdx_frontmatter(title: str, description: str) -> str:
@@ -434,6 +439,59 @@ def update_signals_index(new_dates: List[str]) -> None:
         print(f"\n✓ {SIGNALS_INDEX_PATH} already up to date")
 
 
+
+def write_today_index() -> None:
+    episode_files = sorted([
+        f for f in os.listdir(EPISODES_DIR)
+        if f.endswith(".mdx") and f != "index.mdx"
+    ], reverse=True)
+    signal_files = sorted([
+        f for f in os.listdir(SIGNALS_DIR)
+        if f.endswith(".mdx") and f != "index.mdx"
+    ], reverse=True)
+    latest_episode_link = ""
+    if episode_files:
+        slug = episode_files[0].replace(".mdx", "")
+        ep_path = os.path.join(EPISODES_DIR, episode_files[0])
+        title = slug
+        with open(ep_path) as fh:
+            for line in fh:
+                if line.startswith("title:"):
+                    title = line.split("title:", 1)[1].strip().strip('"')
+                    break
+        latest_episode_link = f"- [{slug}: {title}](/intelligence/episodes/{slug})"
+    latest_signal_link = ""
+    if signal_files:
+        slug = signal_files[0].replace(".mdx", "")
+        latest_signal_link = f"- [{slug}](/intelligence/signals/{slug})"
+    transcript_links = ""
+    if os.path.exists(TRANSCRIPTS_PAGES_DIR):
+        tfiles = sorted([
+            f for f in os.listdir(TRANSCRIPTS_PAGES_DIR)
+            if f.endswith(".mdx")
+        ], reverse=True)[:3]
+        transcript_links = "\n".join([
+            "- [" + f.replace(".mdx","").replace("-raw","") + " Raw Transcript](/transcripts/" + f.replace(".mdx","") + ")"
+            for f in tfiles
+        ])
+    today_content = (
+        "---\n"
+        'title: "Today"\n'
+        'description: "The latest SunshineFM intelligence for Palm Springs Coachella."\n'
+        "---\n\n"
+        "This page is updated daily. Tracking **Palm Springs Coachella**: AI, business, startups, and the local operator economy.\n\n"
+        "## Latest flagship\n"
+        + latest_episode_link + "\n\n"
+        "## Latest signals\n"
+        + latest_signal_link + "\n\n"
+        "## Sources (raw transcripts)\n"
+        + transcript_links + "\n"
+    )
+    today_path = os.path.join("intelligence", "today.mdx")
+    with open(today_path, "w") as fh:
+        fh.write(today_content)
+    print("  today.mdx updated")
+
 def main() -> None:
     import sys
     ensure_dirs()
@@ -482,6 +540,7 @@ def main() -> None:
     if processed_dates:
         update_episodes_index(processed_dates)
         update_signals_index(processed_dates)
+        write_today_index()
 
     if failed_dates:
         print(f"\n⚠ FAILED DATES — rerun manually: {', '.join(failed_dates)}")
