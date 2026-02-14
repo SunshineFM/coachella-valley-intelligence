@@ -28,7 +28,7 @@ def claude_chat(system: str, user: str) -> str:
         raise RuntimeError("Missing ANTHROPIC_API_KEY secret in GitHub Actions.")
     payload = {
         "model": MODEL,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
         "system": system,
         "messages": [
             {"role": "user", "content": user}
