@@ -267,7 +267,7 @@ def changed_transcripts() -> List[str]:
             candidates.append((os.path.getmtime(full), full))
 
     candidates.sort(reverse=True)
-    return [candidates[0][1]] if candidates else []
+    return []  # No date specified -- use --date argument
 
 
 def make_transcript_page(date_str: str, transcript: str) -> str:
@@ -435,9 +435,25 @@ def update_signals_index(new_dates: List[str]) -> None:
 
 
 def main() -> None:
+    import sys
     ensure_dirs()
 
-    files = changed_transcripts()
+    # Support --date YYYY-MM-DD argument for targeted processing
+    forced_date = None
+    if "--date" in sys.argv:
+        idx = sys.argv.index("--date")
+        if idx + 1 < len(sys.argv):
+            forced_date = sys.argv[idx + 1]
+
+    if forced_date:
+        path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{forced_date}.txt")
+        if not os.path.exists(path):
+            print(f"No transcript found for {forced_date}")
+            return
+        files = [f"transcripts/source/{forced_date}.txt"]
+    else:
+        files = changed_transcripts()
+
     if not files:
         print("No transcript files found to process.")
         return
@@ -473,5 +489,8 @@ def main() -> None:
         print(f"\n✓ All dates processed successfully")
 
 
+
 if __name__ == "__main__":
     main()
+
+# Override entry point to support --date argument
