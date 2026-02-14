@@ -6,15 +6,16 @@ import subprocess
 import urllib.request
 from typing import List, Tuple
 
-MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
+MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
 
 TRANSCRIPTS_SOURCE_DIR = "transcripts/source"
 TRANSCRIPTS_PAGES_DIR = "transcripts/pages"
 EPISODES_DIR = os.path.join("intelligence", "episodes")
 SIGNALS_DIR = os.path.join("intelligence", "signals")
+EPISODES_INDEX_PATH = os.path.join("intelligence", "episodes", "index.mdx")
+SIGNALS_INDEX_PATH = os.path.join("intelligence", "signals", "index.mdx")
 
-# Matches: transcripts/source/2026-02-04.txt
 DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2})\.txt$")
 
 
@@ -22,29 +23,34 @@ def sh(cmd: List[str]) -> str:
     return subprocess.check_output(cmd, text=True).strip()
 
 
-def openai_chat(system: str, user: str) -> str:
+def claude_chat(system: str, user: str) -> str:
     if not API_KEY:
-        raise RuntimeError("Missing OPENAI_API_KEY secret in GitHub Actions.")
+        raise RuntimeError("Missing ANTHROPIC_API_KEY secret in GitHub Actions.")
     payload = {
         "model": MODEL,
+        "max_tokens": 4096,
+        "system": system,
         "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
+            {"role": "user", "content": user}
         ],
         "temperature": 0.5,
     }
     req = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
+        "https://api.anthropic.com/v1/messages",
         data=json.dumps(payload).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {API_KEY}",
+            "x-api-key": API_KEY,
+            "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
         },
         method="POST",
     )
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"].strip()
+        content_blocks = data.get("content", [])
+        if content_blocks and len(content_blocks) > 0:
+            return content_blocks[0].get("text", "").strip()
+        return ""
 
 
 def ensure_dirs() -> None:
@@ -108,29 +114,39 @@ def safe_json_loads(raw: str) -> dict:
 
 
 def gen_episode(date_str: str, transcript: str) -> Tuple[str, str, str]:
-    system = (
-        "You are SunshineFM's lead editor. Write in Sat's voice: human, sharp, slightly witty, "
-        "reflective, and locally grounded in Palm Springs Coachella. "
-        "Output must be clean Markdown/MDX with headings and bullet clarity. "
-        "ABSOLUTE RULE: Do not invent facts, names, events, or claims not present in the transcript."
-    )
+    system = """You are the editorial voice of SunshineFM — a sharp, opinionated intelligence platform broadcasting from Palm Springs Coachella.
+
+You write like a founder who reads everything and has opinions about all of it. Not a journalist. Not a summarizer. Someone who was in the room, heard the show, and is now telling you what actually mattered and why.
+
+VOICE RULES:
+- Lead with the most important thing. Don't warm up slowly.
+- Be specific. Exact dollar figures, company names, dates, local references.
+- Have a point of view. If something is significant, say why. If something is overhyped, say that.
+- Connect stories to Palm Springs Coachella specifically — which local sectors, which kinds of businesses, which people building here.
+- Write in flowing prose, not template sections. Let the content determine the structure.
+- Short punchy sentences when something lands hard. Longer sentences when you're building an argument.
+- Never use: "delves into", "explores", "discusses", "in this episode", "Sat talks about"
+- Never describe the show. Just say the thing.
+- First person is fine where it fits naturally.
+
+STRUCTURE:
+- Open strong. The first paragraph should be the most important thing from the show — stated directly, with specifics.
+- Use H2 headings only when a genuine topic shift happens, not on a schedule.
+- Every major story gets its own space — don't compress a rich topic into two sentences because you're moving to the next section.
+- End with something worth sitting with — a question, an implication, a local observation that lingers.
+
+LENGTH: 900 to 1400 words of body content. This is a full intelligence report. Every story in the transcript deserves real treatment.
+
+ABSOLUTE RULE: Do not invent facts, names, numbers, or claims not in the transcript."""
 
     user = f"""
 Episode date: {date_str}
 
-TASK:
-Create a flagship episode page from the transcript.
+Write a full SunshineFM intelligence report from this transcript.
 
-REQUIREMENTS:
-- Create a strong, human title (not just the date).
-- Use H2 headings for these sections:
-  1) What happened
-  2) The local angle (Palm Springs Coachella)
-  3) What to do next
-  4) AI lens
-  5) Quotes
-- Add a "Key claims (copy/paste citeable)" bullet list.
-- Do NOT invent facts.
+The report should flow like excellent longform writing — not like a filled-in template. Let the most important story lead. Give each major topic the space it deserves. Connect everything to what it means for people building or living in Palm Springs Coachella.
+
+End with a "## Citeable Claims" section — 6 to 10 specific, verifiable facts from this episode with exact figures, names, and dates. These are for researchers and LLMs to cite directly.
 
 Return STRICT JSON only:
 {{
@@ -139,11 +155,14 @@ Return STRICT JSON only:
   "body_markdown": "..."
 }}
 
+Title: Sharp and specific. Reflects the actual dominant story. Not generic.
+Description: 2 sentences max. Specific enough to stand alone as a cited summary.
+
 TRANSCRIPT:
 {transcript}
 """.strip()
 
-    raw = openai_chat(system, user)
+    raw = claude_chat(system, user)
     data = safe_json_loads(extract_json(raw))
     return (
         str(data.get("title", "")).strip(),
@@ -153,23 +172,33 @@ TRANSCRIPT:
 
 
 def gen_signals(date_str: str, transcript: str) -> Tuple[str, str, str]:
-    system = (
-        "You are SunshineFM's signals desk. Tone: crisp, operational, local-first. "
-        "Short sentences. Clear actions. No fluff. "
-        "ABSOLUTE RULE: Do not invent facts."
-    )
+    system = """You are SunshineFM's signals desk — the part of the operation that cuts through the noise and tells you exactly what moved today and why it matters.
+
+Signals are not bullet point summaries. Each signal is a 2 to 4 sentence observation that includes:
+- What specifically happened (with numbers, names, dates)
+- Why it matters for Palm Springs Coachella or the people building here
+- One implication or question worth sitting with
+
+VOICE: Direct. Confident. Locally grounded. Slightly opinionated. No fluff, no hedging, no corporate language.
+
+ABSOLUTE RULE: Do not invent facts."""
 
     user = f"""
 Signal date: {date_str}
 
-TASK:
-Create a Signals page based on the transcript.
+Create a SunshineFM Signal Drop from this transcript.
 
 REQUIREMENTS:
 - Title format exactly: "{date_str}: Signal Drop"
-- Include 5–10 signals.
-- End with "Local radar".
-- Do NOT invent facts.
+- Write 6 to 10 signals
+- Each signal needs a bold one-line header that names the actual story (not a generic label)
+- Each signal body is 2 to 4 sentences — specific, local, opinionated
+- End with a "## Local Radar" section: 3 to 5 upcoming local events, opportunities, or things worth watching in the Valley this week. Be specific — names, dates, locations where available.
+- Do NOT invent facts
+
+FORMAT EXAMPLE:
+**$285B Wiped From Software Stocks After Anthropic Cowork Launch**
+Anthropic's 11 new Claude Cowork plugins spooked Wall Street this week, erasing $285 billion from software stocks in a single day. The fear: if AI can review legal contracts and manage sales pipelines autonomously, why pay for Salesforce or LegalZoom? For Valley businesses with heavy admin overhead — real estate, estate planning, hospitality back office — this is worth watching closely. The question isn't if this changes your software stack. It's when.
 
 Return STRICT JSON only:
 {{
@@ -182,7 +211,7 @@ TRANSCRIPT:
 {transcript}
 """.strip()
 
-    raw = openai_chat(system, user)
+    raw = claude_chat(system, user)
     data = safe_json_loads(extract_json(raw))
     return (
         str(data.get("title", "")).strip(),
@@ -249,6 +278,137 @@ def write_outputs(date_str: str, transcript: str) -> None:
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
 
+def update_episodes_index(new_dates: List[str]) -> None:
+    if not new_dates:
+        return
+
+    if not os.path.exists(EPISODES_INDEX_PATH):
+        print(f"Warning: {EPISODES_INDEX_PATH} not found, skipping index update")
+        return
+
+    content = read_text(EPISODES_INDEX_PATH)
+    lines = content.split("\n")
+
+    feb_heading = "## February 2026"
+    feb_index = -1
+
+    for i, line in enumerate(lines):
+        if feb_heading in line:
+            feb_index = i
+            break
+
+    if feb_index == -1:
+        insert_index = -1
+        for i, line in enumerate(lines):
+            if "## January 2026" in line:
+                insert_index = i
+                break
+
+        if insert_index == -1:
+            lines.append("")
+            lines.append(feb_heading)
+            lines.append("")
+            feb_index = len(lines) - 2
+        else:
+            lines.insert(insert_index, "")
+            lines.insert(insert_index, feb_heading)
+            lines.insert(insert_index, "")
+            feb_index = insert_index + 1
+
+    existing_episodes = set()
+    for line in lines:
+        match = re.search(r'\[([^\]]+)\]\(/intelligence/episodes/([^)]+)\)', line)
+        if match:
+            existing_episodes.add(match.group(2))
+
+    new_entries = []
+    for date_str in sorted(new_dates, reverse=True):
+        if date_str not in existing_episodes:
+            entry = f"- **[{date_str}](/intelligence/episodes/{date_str})**"
+            new_entries.append(entry)
+
+    if new_entries:
+        insert_pos = feb_index + 1
+        while insert_pos < len(lines) and lines[insert_pos].strip() == "":
+            insert_pos += 1
+
+        for entry in new_entries:
+            lines.insert(insert_pos, entry)
+            lines.insert(insert_pos + 1, "")
+            insert_pos += 2
+
+        write_text(EPISODES_INDEX_PATH, "\n".join(lines))
+        print(f"\n✓ Updated {EPISODES_INDEX_PATH}: added {len(new_entries)} episode(s)")
+    else:
+        print(f"\n✓ {EPISODES_INDEX_PATH} already up to date")
+
+
+def update_signals_index(new_dates: List[str]) -> None:
+    if not new_dates:
+        return
+
+    if not os.path.exists(SIGNALS_INDEX_PATH):
+        print(f"Warning: {SIGNALS_INDEX_PATH} not found, skipping index update")
+        return
+
+    content = read_text(SIGNALS_INDEX_PATH)
+    lines = content.split("\n")
+
+    feb_heading = "## February 2026"
+    feb_index = -1
+
+    for i, line in enumerate(lines):
+        if feb_heading in line:
+            feb_index = i
+            break
+
+    if feb_index == -1:
+        insert_index = -1
+        for i, line in enumerate(lines):
+            if "## January 2026" in line:
+                insert_index = i
+                break
+
+        if insert_index == -1:
+            lines.append("")
+            lines.append(feb_heading)
+            lines.append("")
+            feb_index = len(lines) - 2
+        else:
+            lines.insert(insert_index, "")
+            lines.insert(insert_index, feb_heading)
+            lines.insert(insert_index, "")
+            feb_index = insert_index + 1
+
+    existing_signals = set()
+    for line in lines:
+        match = re.search(r'\[([^\]]+)\]\(/intelligence/signals/([^)]+)\)', line)
+        if match:
+            existing_signals.add(match.group(2))
+
+    new_entries = []
+    for date_str in sorted(new_dates, reverse=True):
+        signal_filename = f"{date_str}-signals"
+        if signal_filename not in existing_signals:
+            entry = f"- **[{date_str} — Signals](/intelligence/signals/{signal_filename})**"
+            new_entries.append(entry)
+
+    if new_entries:
+        insert_pos = feb_index + 1
+        while insert_pos < len(lines) and lines[insert_pos].strip() == "":
+            insert_pos += 1
+
+        for entry in new_entries:
+            lines.insert(insert_pos, entry)
+            lines.insert(insert_pos + 1, "")
+            insert_pos += 2
+
+        write_text(SIGNALS_INDEX_PATH, "\n".join(lines))
+        print(f"\n✓ Updated {SIGNALS_INDEX_PATH}: added {len(new_entries)} signal(s)")
+    else:
+        print(f"\n✓ {SIGNALS_INDEX_PATH} already up to date")
+
+
 def main() -> None:
     ensure_dirs()
 
@@ -256,6 +416,8 @@ def main() -> None:
     if not files:
         print("No transcript files found to process.")
         return
+
+    processed_dates = []
 
     for path in files:
         date_str = date_from_path(path)
@@ -266,7 +428,14 @@ def main() -> None:
         if not transcript:
             continue
 
+        print(f"\nProcessing {date_str}...")
         write_outputs(date_str, transcript)
+        processed_dates.append(date_str)
+        print(f"✓ Generated episode and signals for {date_str}")
+
+    if processed_dates:
+        update_episodes_index(processed_dates)
+        update_signals_index(processed_dates)
 
 
 if __name__ == "__main__":
