@@ -144,6 +144,8 @@ Episode date: {date_str}
 
 Write a full SunshineFM intelligence report from this transcript.
 
+Do not include an H1 title in the body_markdown — the frontmatter title handles that.
+
 The report should flow like excellent longform writing — not like a filled-in template. Let the most important story lead. Give each major topic the space it deserves. Connect everything to what it means for people building or living in Palm Springs Coachella.
 
 End with a "## Citeable Claims" section — 6 to 10 specific, verifiable facts from this episode with exact figures, names, and dates. These are for researchers and LLMs to cite directly.
