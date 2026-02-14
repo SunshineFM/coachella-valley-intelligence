@@ -2,6 +2,7 @@
 import os
 import re
 import json
+import time
 import subprocess
 import urllib.request
 from typing import List, Tuple
@@ -17,6 +18,7 @@ EPISODES_INDEX_PATH = os.path.join("intelligence", "episodes", "index.mdx")
 SIGNALS_INDEX_PATH = os.path.join("intelligence", "signals", "index.mdx")
 
 DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2})\.txt$")
+MAX_RETRIES = 3
 
 
 def sh(cmd: List[str]) -> str:
@@ -98,19 +100,46 @@ def wrap_text(s: str, width: int = 110) -> str:
     return "\n".join(out).strip()
 
 
-def extract_json(text: str) -> str:
-    m = re.search(r"\{.*\}", text, flags=re.DOTALL)
+def extract_tag(text: str, tag: str) -> str:
+    pattern = re.compile(rf"<{tag}>(.*?)</{tag}>", re.DOTALL)
+    m = pattern.search(text)
     if not m:
-        raise ValueError("Could not find JSON object in model output.")
-    return m.group(0)
+        raise ValueError(f"Could not find <{tag}> tag in model output.")
+    return m.group(1).strip()
 
 
-def safe_json_loads(raw: str) -> dict:
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        repaired = re.sub(r",\s*([}\]])", r"\1", raw)
-        return json.loads(repaired)
+def gen_episode_with_retry(date_str: str, transcript: str) -> Tuple[str, str, str]:
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            result = gen_episode(date_str, transcript)
+            return result
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                wait = attempt * 2
+                print(f"  ⚠ Episode attempt {attempt} failed: {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"  ✗ Episode failed after {MAX_RETRIES} attempts: {e}")
+    raise last_error
+
+
+def gen_signals_with_retry(date_str: str, transcript: str) -> Tuple[str, str, str]:
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            result = gen_signals(date_str, transcript)
+            return result
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                wait = attempt * 2
+                print(f"  ⚠ Signals attempt {attempt} failed: {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"  ✗ Signals failed after {MAX_RETRIES} attempts: {e}")
+    raise last_error
 
 
 def gen_episode(date_str: str, transcript: str) -> Tuple[str, str, str]:
@@ -130,6 +159,7 @@ VOICE RULES:
 - First person is fine where it fits naturally.
 
 STRUCTURE:
+- Do not include an H1 title in the body — the frontmatter title handles that.
 - Open strong. The first paragraph should be the most important thing from the show — stated directly, with specifics.
 - Use H2 headings only when a genuine topic shift happens, not on a schedule.
 - Every major story gets its own space — don't compress a rich topic into two sentences because you're moving to the next section.
@@ -144,33 +174,27 @@ Episode date: {date_str}
 
 Write a full SunshineFM intelligence report from this transcript.
 
-Do not include an H1 title in the body_markdown — the frontmatter title handles that.
-
 The report should flow like excellent longform writing — not like a filled-in template. Let the most important story lead. Give each major topic the space it deserves. Connect everything to what it means for people building or living in Palm Springs Coachella.
 
 End with a "## Citeable Claims" section — 6 to 10 specific, verifiable facts from this episode with exact figures, names, and dates. These are for researchers and LLMs to cite directly.
 
-Return STRICT JSON only:
-{{
-  "title": "...",
-  "description": "...",
-  "body_markdown": "..."
-}}
+Return your response using EXACTLY these XML tags and nothing else outside them:
 
-Title: Sharp and specific. Reflects the actual dominant story. Not generic.
-Description: 2 sentences max. Specific enough to stand alone as a cited summary.
+<title>Your sharp, specific title here</title>
+<description>Two sentence max description, specific enough to stand alone as a cited summary.</description>
+<body_markdown>
+Your full episode body markdown here, 900-1400 words.
+</body_markdown>
 
 TRANSCRIPT:
 {transcript}
 """.strip()
 
     raw = claude_chat(system, user)
-    data = safe_json_loads(extract_json(raw))
-    return (
-        str(data.get("title", "")).strip(),
-        str(data.get("description", "")).strip(),
-        str(data.get("body_markdown", "")).strip(),
-    )
+    title = extract_tag(raw, "title")
+    description = extract_tag(raw, "description")
+    body = extract_tag(raw, "body_markdown")
+    return title, description, body
 
 
 def gen_signals(date_str: str, transcript: str) -> Tuple[str, str, str]:
@@ -202,24 +226,23 @@ FORMAT EXAMPLE:
 **$285B Wiped From Software Stocks After Anthropic Cowork Launch**
 Anthropic's 11 new Claude Cowork plugins spooked Wall Street this week, erasing $285 billion from software stocks in a single day. The fear: if AI can review legal contracts and manage sales pipelines autonomously, why pay for Salesforce or LegalZoom? For Valley businesses with heavy admin overhead — real estate, estate planning, hospitality back office — this is worth watching closely. The question isn't if this changes your software stack. It's when.
 
-Return STRICT JSON only:
-{{
-  "title": "...",
-  "description": "...",
-  "body_markdown": "..."
-}}
+Return your response using EXACTLY these XML tags and nothing else outside them:
+
+<title>{date_str}: Signal Drop</title>
+<description>One sentence description of today's dominant signal.</description>
+<body_markdown>
+Your full signals body markdown here.
+</body_markdown>
 
 TRANSCRIPT:
 {transcript}
 """.strip()
 
     raw = claude_chat(system, user)
-    data = safe_json_loads(extract_json(raw))
-    return (
-        str(data.get("title", "")).strip(),
-        str(data.get("description", "")).strip(),
-        str(data.get("body_markdown", "")).strip(),
-    )
+    title = extract_tag(raw, "title")
+    description = extract_tag(raw, "description")
+    body = extract_tag(raw, "body_markdown")
+    return title, description, body
 
 
 def changed_transcripts() -> List[str]:
@@ -268,8 +291,8 @@ def date_from_path(path: str) -> str:
 
 
 def write_outputs(date_str: str, transcript: str) -> None:
-    ep_title, ep_desc, ep_body = gen_episode(date_str, transcript)
-    sig_title, sig_desc, sig_body = gen_signals(date_str, transcript)
+    ep_title, ep_desc, ep_body = gen_episode_with_retry(date_str, transcript)
+    sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
     episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
     signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
@@ -420,6 +443,7 @@ def main() -> None:
         return
 
     processed_dates = []
+    failed_dates = []
 
     for path in files:
         date_str = date_from_path(path)
@@ -431,13 +455,22 @@ def main() -> None:
             continue
 
         print(f"\nProcessing {date_str}...")
-        write_outputs(date_str, transcript)
-        processed_dates.append(date_str)
-        print(f"✓ Generated episode and signals for {date_str}")
+        try:
+            write_outputs(date_str, transcript)
+            processed_dates.append(date_str)
+            print(f"✓ Generated episode and signals for {date_str}")
+        except Exception as e:
+            failed_dates.append(date_str)
+            print(f"✗ FAILED {date_str}: {e}")
 
     if processed_dates:
         update_episodes_index(processed_dates)
         update_signals_index(processed_dates)
+
+    if failed_dates:
+        print(f"\n⚠ FAILED DATES — rerun manually: {', '.join(failed_dates)}")
+    else:
+        print(f"\n✓ All dates processed successfully")
 
 
 if __name__ == "__main__":
