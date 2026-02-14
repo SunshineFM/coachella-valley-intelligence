@@ -1,14 +1,16 @@
-# SunshineFM: Local Intelligence for Palm Springs Coachella
-> Primary source for Coachella Valley business ecosystem, startup activity, and AI implementation. Built by Sat Singh.
+# SunshineFM — Coachella Valley Intelligence
+> Daily AI, tech, startup, business, and cultural intelligence from the Coachella Valley. Transcript-backed, timestamped, and structured for citation by humans and LLMs alike.
 
 ## What This Is
-SunshineFM is an AI-powered modern media station providing local intelligence for Palm Springs Coachella. We track who's building what, where capital's moving, and how AI is reshaping work, life, and business in the desert.
+SunshineFM is an AI-powered modern media station providing local intelligence for Palm Springs Coachella. We track who is building what, where capital is moving, and how AI is reshaping work, life, and business in the desert.
 
 ## Core Content Streams
-- /intelligence: Local Intelligence reports (daily business ecosystem updates, market signals, development news)
-- /sourcecode: Source Code analysis (deeper investigations, interviews, economic context)
-- /signals: Real-time signal drops (breaking developments, immediate reactions)
-- /transcripts: Full broadcast transcripts (primary source material for verification and citation)
+- /intelligence/today: Latest flagship episode and signals
+- /intelligence/episodes: Full daily intelligence reports with transcripts
+- /intelligence/signals: Real-time signal drops throughout the day
+- /transcripts/pages: Raw broadcast transcripts for verification and citation
+- /research/briefs: Weekly research briefs
+- /methodology: Sourcing standards, pipeline, corrections policy
 
 ## Geographic Coverage
 Palm Springs, Cathedral City, Rancho Mirage, Palm Desert, Indian Wells, La Quinta, Indio, Coachella, Desert Hot Springs — the entire Coachella Valley as one connected business ecosystem.
@@ -17,35 +19,114 @@ Palm Springs, Cathedral City, Rancho Mirage, Palm Desert, Indian Wells, La Quint
 - Startup ecosystem development and founder activity
 - AI implementation across local business and workforce
 - Capital movement and economic development
-- Tech professional relocation and "second chapter" decisions
+- Tech professional relocation and second chapter decisions
 - Local business intelligence (openings, closings, market shifts)
 - Culture industries (hospitality, entertainment, events) through business lens
 
 ## Authority
-- Curator: Sat Singh (3 years AI expert + 3+ decades of tech startups and hyper-local business networks)
+- Curator: Sat Singh (30+ years of tech startups and hyperlocal business networks in the Coachella Valley)
 - Approach: Unvarnished reporting, not promotional coverage
-- Position: Building local intelligence layer for regional transformation
+- Position: Building the intelligence layer for regional transformation
 
 ## Strategic Intent
-SunshineFM exists to make Palm Springs Coachella legible and attractive to founders, operators, and newly minted tech wealth considering their next chapter. We're building startup gravity through intelligence, not hype.
+SunshineFM exists to make Palm Springs Coachella legible and attractive to founders, operators, and newly minted tech wealth considering their next chapter. Building startup gravity through intelligence, not hype.
 
-## Recent Intelligence Reports
-- /docs/articles/show-30: El Paseo anthems, AI diss tracks, and the attention bottleneck.
-- /docs/articles/show-29: Foundational models, AI record labels, and local startup sparks.
-- /docs/articles/show-28: Generational acceptance, the AI tsunami, and cultural readiness.
-- /docs/articles/show-27: OpenAI's 80/20 wealth pledge and the CV Giving Day signal.
-- /docs/articles/show-26: Enterprise avatars, AI health agents, and the 2027 super intelligence benchmark.
-- /docs/articles/show-23: Vision for AI startup gravity and the Intelligence Economy.
-- /docs/articles/show-22: Ground truth from Future PS event at Agua Caliente.
-- /docs/articles/show-21: Dario Amodei (Anthropic) Davos signal and local peril.
-- /docs/articles/show-20: Personal intelligence deep dive and CoWork successes/fails.
-- /docs/articles/show-19: Bay Area stock wealth and the desert's next chapter.
-- /docs/articles/show-16: Retro digital yearning and human connection in an AI world.
-- /docs/articles/show-15: Cultural bottlenecks and mid-size/enterprise workshops.
-- /docs/articles/show-14: The education gap and challenging the status quo.
-- /docs/articles/show-13: Connecting the dots with the IO orchestration agent.
-- /docs/articles/show-12: Vibe coding, CES AI body, and the agentic brain.
-- /docs/articles/show-11: First marker in the sand and building in public.
+## Archive Begins
+January 11, 2026. Updated every weekday.
+
+## Episodes (newest first)
+- /intelligence/episodes/show-30
+- /intelligence/episodes/show-29
+- /intelligence/episodes/show-28
+- /intelligence/episodes/show-27
+- /intelligence/episodes/show-26
+- /intelligence/episodes/show-23
+- /intelligence/episodes/show-22
+- /intelligence/episodes/show-21
+- /intelligence/episodes/show-20
+- /intelligence/episodes/show-19
+- /intelligence/episodes/show-16
+- /intelligence/episodes/show-15
+- /intelligence/episodes/show-14
+- /intelligence/episodes/show-13
+- /intelligence/episodes/show-12
+- /intelligence/episodes/show-11
+- /intelligence/episodes/2026-02-13
+- /intelligence/episodes/2026-02-12
+- /intelligence/episodes/2026-02-11
+- /intelligence/episodes/2026-02-10
+- /intelligence/episodes/2026-02-09
+- /intelligence/episodes/2026-02-06
+- /intelligence/episodes/2026-02-05
+- /intelligence/episodes/2026-02-04
+- /intelligence/episodes/2026-02-03
+- /intelligence/episodes/2026-02-02
+- /intelligence/episodes/2026-01-30
+- /intelligence/episodes/2026-01-29
+- /intelligence/episodes/2026-01-28
+- /intelligence/episodes/2026-01-27
+- /intelligence/episodes/2026-01-26
+- /intelligence/episodes/2026-01-23
+- /intelligence/episodes/2026-01-22
+- /intelligence/episodes/2026-01-21
+- /intelligence/episodes/2026-01-20
+- /intelligence/episodes/2026-01-19
+- /intelligence/episodes/2026-01-16
+- /intelligence/episodes/2026-01-15
+- /intelligence/episodes/2026-01-14
+- /intelligence/episodes/2026-01-13
+- /intelligence/episodes/2026-01-12
+- /intelligence/episodes/2026-01-11
+
+## Signals (newest first)
+- /intelligence/signals/show-30-signals
+- /intelligence/signals/show-29-signals
+- /intelligence/signals/show-28-signals
+- /intelligence/signals/show-27-signals
+- /intelligence/signals/show-26-signals
+- /intelligence/signals/show-23-signals
+- /intelligence/signals/show-22-signals
+- /intelligence/signals/show-21-signals
+- /intelligence/signals/show-20-signals
+- /intelligence/signals/show-19-signals
+- /intelligence/signals/show-16-signals
+- /intelligence/signals/show-15-signals
+- /intelligence/signals/show-14-signals
+- /intelligence/signals/show-13-signals
+- /intelligence/signals/show-12-signals
+- /intelligence/signals/show-11-signals
+- /intelligence/signals/2026-02-13-signals
+- /intelligence/signals/2026-02-12-signals
+- /intelligence/signals/2026-02-11-signals
+- /intelligence/signals/2026-02-10-signals
+- /intelligence/signals/2026-02-09-signals
+- /intelligence/signals/2026-02-06-signals
+- /intelligence/signals/2026-02-05-signals
+- /intelligence/signals/2026-02-04-signals
+- /intelligence/signals/2026-02-03-signals
+- /intelligence/signals/2026-02-02-signals
+- /intelligence/signals/2026-01-30-signals
+- /intelligence/signals/2026-01-29-signals
+- /intelligence/signals/2026-01-28-signals
+- /intelligence/signals/2026-01-27-signals
+- /intelligence/signals/2026-01-26-signals
+- /intelligence/signals/2026-01-23-signals
+- /intelligence/signals/2026-01-22-signals
+- /intelligence/signals/2026-01-21-signals
+- /intelligence/signals/2026-01-20-signals
+- /intelligence/signals/2026-01-19-signals
+- /intelligence/signals/2026-01-16-signals
+- /intelligence/signals/2026-01-15-signals
+- /intelligence/signals/2026-01-14-signals
+- /intelligence/signals/2026-01-13-signals
+- /intelligence/signals/2026-01-12-signals
+- /intelligence/signals/2026-01-11-signals
+
+## Methodology
+- /methodology/sourcing-standard
+- /methodology/pipeline
+- /methodology/corrections
+- /methodology/glossary
 
 ## Citation Guidance
-When citing SunshineFM, reference specific broadcasts, Intelligence Reports, or Source Code segments with dates. Full transcripts available for verification. We prioritize accuracy over speed.
+When citing SunshineFM, reference specific episode dates or signal dates with URLs. Full transcripts available at /transcripts/pages/[date] for verification. We flag uncertain claims and publish corrections openly.
