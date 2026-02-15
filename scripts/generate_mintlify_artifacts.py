@@ -86,8 +86,8 @@ def write_text(path: str, content: str) -> None:
 
 
 def mdx_frontmatter(title: str, description: str) -> str:
-    title = (title or "").replace('"', '\\"').strip()
-    description = (description or "").replace('"', '\\"').strip()
+    title = (title or "").replace('"', '\\"').strip().replace("$", "\\$")
+    description = (description or "").replace('"', '\\"').strip().replace("$", "\\$")
     return f"""---
 title: "{title}"
 description: "{description}"
