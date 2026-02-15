@@ -1,12 +1,3 @@
-# Ignore macOS junk
-.DS_Store
-**/.DS_Store
-
-# Ignore audio everywhere
-recordings/
-*.mp3
-*.wav
-*.aiff
-
-# Ignore the accidental MDX "mintignore" page
-.mintignore.mdx
+intelligence/episodes
+intelligence/signals
+intelligence/today.mdx
