@@ -42,7 +42,15 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
-          python3 scripts/generate_mintlify_artifacts.py
+          # Extract date from changed transcript filename
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- transcripts/source/*.txt | head -1)
+          if [ -n "$CHANGED" ]; then
+            DATE=$(basename "$CHANGED" .txt)
+            echo "Processing date: $DATE"
+            python3 scripts/generate_mintlify_artifacts.py --date "$DATE"
+          else
+            echo "No new transcript found in this commit."
+          fi
 
       - name: Commit & push (with rebase + retry)
         run: |
