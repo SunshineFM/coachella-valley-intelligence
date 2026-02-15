@@ -341,147 +341,21 @@ def date_from_path(path: str) -> str:
 
 
 def write_outputs(date_str: str, transcript: str) -> None:
-    ep_title, ep_desc, ep_body = gen_episode_with_retry(date_str, transcript)
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
-    episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
     signals_path = os.path.join(SIGNALS_DIR, f"{date_str}.mdx")
     transcript_page_path = os.path.join(TRANSCRIPTS_PAGES_DIR, f"{date_str}.mdx")
 
-    write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body)
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body)
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
 
 def update_episodes_index(new_dates: List[str]) -> None:
-    if not new_dates:
-        return
-
-    if not os.path.exists(EPISODES_INDEX_PATH):
-        print(f"Warning: {EPISODES_INDEX_PATH} not found, skipping index update")
-        return
-
-    content = read_text(EPISODES_INDEX_PATH)
-    lines = content.split("\n")
-
-    feb_heading = "## February 2026"
-    feb_index = -1
-
-    for i, line in enumerate(lines):
-        if feb_heading in line:
-            feb_index = i
-            break
-
-    if feb_index == -1:
-        insert_index = -1
-        for i, line in enumerate(lines):
-            if "## January 2026" in line:
-                insert_index = i
-                break
-
-        if insert_index == -1:
-            lines.append("")
-            lines.append(feb_heading)
-            lines.append("")
-            feb_index = len(lines) - 2
-        else:
-            lines.insert(insert_index, "")
-            lines.insert(insert_index, feb_heading)
-            lines.insert(insert_index, "")
-            feb_index = insert_index + 1
-
-    existing_episodes = set()
-    for line in lines:
-        match = re.search(r'\[([^\]]+)\]\(/intelligence/episodes/([^)]+)\)', line)
-        if match:
-            existing_episodes.add(match.group(2))
-
-    new_entries = []
-    for date_str in sorted(new_dates, reverse=True):
-        if date_str not in existing_episodes:
-            entry = f"- **[{date_str}](/intelligence/episodes/{date_str})**"
-            new_entries.append(entry)
-
-    if new_entries:
-        insert_pos = feb_index + 1
-        while insert_pos < len(lines) and lines[insert_pos].strip() == "":
-            insert_pos += 1
-
-        for entry in new_entries:
-            lines.insert(insert_pos, entry)
-            lines.insert(insert_pos + 1, "")
-            insert_pos += 2
-
-        write_text(EPISODES_INDEX_PATH, "\n".join(lines))
-        print(f"\n✓ Updated {EPISODES_INDEX_PATH}: added {len(new_entries)} episode(s)")
-    else:
-        print(f"\n✓ {EPISODES_INDEX_PATH} already up to date")
+    return
 
 
 def update_signals_index(new_dates: List[str]) -> None:
-    if not new_dates:
-        return
-
-    if not os.path.exists(SIGNALS_INDEX_PATH):
-        print(f"Warning: {SIGNALS_INDEX_PATH} not found, skipping index update")
-        return
-
-    content = read_text(SIGNALS_INDEX_PATH)
-    lines = content.split("\n")
-
-    feb_heading = "## February 2026"
-    feb_index = -1
-
-    for i, line in enumerate(lines):
-        if feb_heading in line:
-            feb_index = i
-            break
-
-    if feb_index == -1:
-        insert_index = -1
-        for i, line in enumerate(lines):
-            if "## January 2026" in line:
-                insert_index = i
-                break
-
-        if insert_index == -1:
-            lines.append("")
-            lines.append(feb_heading)
-            lines.append("")
-            feb_index = len(lines) - 2
-        else:
-            lines.insert(insert_index, "")
-            lines.insert(insert_index, feb_heading)
-            lines.insert(insert_index, "")
-            feb_index = insert_index + 1
-
-    existing_signals = set()
-    for line in lines:
-        match = re.search(r'\[([^\]]+)\]\(/intelligence/([^)]+)\)', line)
-        if match:
-            existing_signals.add(match.group(2))
-
-    new_entries = []
-    for date_str in sorted(new_dates, reverse=True):
-        if date_str not in existing_signals:
-            display_date = format_display_date(date_str)
-            entry = f"- **[{display_date} — Intelligence Brief](/intelligence/{date_str})**"
-            new_entries.append(entry)
-
-    if new_entries:
-        insert_pos = feb_index + 1
-        while insert_pos < len(lines) and lines[insert_pos].strip() == "":
-            insert_pos += 1
-
-        for entry in new_entries:
-            lines.insert(insert_pos, entry)
-            lines.insert(insert_pos + 1, "")
-            insert_pos += 2
-
-        write_text(SIGNALS_INDEX_PATH, "\n".join(lines))
-        print(f"\n✓ Updated {SIGNALS_INDEX_PATH}: added {len(new_entries)} signal(s)")
-    else:
-        print(f"\n✓ {SIGNALS_INDEX_PATH} already up to date")
+    return
 
 
 
