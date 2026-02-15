@@ -360,57 +360,7 @@ def update_signals_index(new_dates: List[str]) -> None:
 
 
 def write_today_index() -> None:
-    episode_files = sorted([
-        f for f in os.listdir(EPISODES_DIR)
-        if f.endswith(".mdx") and f != "index.mdx"
-    ], reverse=True)
-    signal_files = sorted([
-        f for f in os.listdir(SIGNALS_DIR)
-        if f.endswith(".mdx") and f != "index.mdx"
-    ], reverse=True)
-    latest_episode_link = ""
-    if episode_files:
-        slug = episode_files[0].replace(".mdx", "")
-        ep_path = os.path.join(EPISODES_DIR, episode_files[0])
-        title = slug
-        with open(ep_path) as fh:
-            for line in fh:
-                if line.startswith("title:"):
-                    title = line.split("title:", 1)[1].strip().strip('"')
-                    break
-        latest_episode_link = f"- [{slug}: {title}](/intelligence/episodes/{slug})"
-    latest_signal_link = ""
-    if signal_files:
-        slug = signal_files[0].replace(".mdx", "")
-        display_date = format_display_date(slug)
-        latest_signal_link = f"- [{display_date} — Intelligence Brief](/intelligence/{slug})"
-    transcript_links = ""
-    if os.path.exists(TRANSCRIPTS_PAGES_DIR):
-        tfiles = sorted([
-            f for f in os.listdir(TRANSCRIPTS_PAGES_DIR)
-            if f.endswith(".mdx")
-        ], reverse=True)[:3]
-        transcript_links = "\n".join([
-            "- [" + f.replace(".mdx","").replace("-raw","") + " Raw Transcript](/transcripts/" + f.replace(".mdx","") + ")"
-            for f in tfiles
-        ])
-    today_content = (
-        "---\n"
-        'title: "Today"\n'
-        'description: "The latest SunshineFM intelligence for Palm Springs Coachella."\n'
-        "---\n\n"
-        "This page is updated daily. Tracking **Palm Springs Coachella**: AI, business, startups, and the local operator economy.\n\n"
-        "## Latest flagship\n"
-        + latest_episode_link + "\n\n"
-        "## Latest signals\n"
-        + latest_signal_link + "\n\n"
-        "## Sources (raw transcripts)\n"
-        + transcript_links + "\n"
-    )
-    today_path = os.path.join("intelligence", "today.mdx")
-    with open(today_path, "w") as fh:
-        fh.write(today_content)
-    print("  today.mdx updated")
+    return
 
 def main() -> None:
     import sys
