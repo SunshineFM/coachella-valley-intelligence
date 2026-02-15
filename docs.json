@@ -20,24 +20,8 @@
         "group": "Start Here",
         "pages": [
           "index",
-          "start-here/index",
-          "start-here/relocating-founders",
-          "start-here/local-builders"
-        ]
-      },
-      {
-        "group": "Intelligence",
-        "pages": [
-          "intelligence/today",
-          "intelligence/episodes/index",
-          "intelligence/signals/index"
-        ]
-      },
-      {
-        "group": "Research",
-        "pages": [
-          "research/briefs/index",
-          "research/weekly/index"
+          "intelligence/signals/index",
+          "intelligence/today"
         ]
       },
       {
