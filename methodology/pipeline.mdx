@@ -1,40 +1,34 @@
 ---
-title: "Pipeline"
-description: "How SunshineFM turns live radio into timestamped, transcript-backed intelligence for Coachella Valley (Palm Springs Coachella)"
+title: 'Pipeline'
+description: 'How SunshineFM turns live radio into timestamped, transcript-backed intelligence for Palm Springs Coachella.'
 ---
 
----
-
-SunshineFM is a daily intelligence pipeline: live show → transcript → signals → flagship intelligence.
+Every weekday, SunshineFM runs a single automated pipeline from live broadcast to published intelligence.
 
 ## What happens each weekday
 
-1. **Record** the show locally (Audio Hijack on the Mac mini)
+1. **Record** — Sat broadcasts live at 3:00 PM PST. Audio Hijack records and saves the MP3 locally.
+2. **Transcribe** — Hazel detects the new recording and triggers AssemblyAI, which transcribes the audio and saves a timestamped `.txt` file.
+3. **Generate** — The transcript is committed to GitHub, triggering GitHub Actions, which calls the Claude API to generate an Intelligence Brief MDX file.
+4. **Publish** — Mintlify detects the new file and deploys automatically. The Intelligence Brief is live within minutes of the show ending.
 
-2. **Transcribe** the recording (AssemblyAI)
+## What the pipeline produces
 
-3. **Write Signals** (short, timestamped updates)
+Each broadcast generates two outputs:
+- `intelligence/YYYY-MM-DD-HHMM.mdx` — the Intelligence Brief
+- `transcripts/pages/YYYY-MM-DD-HHMM.mdx` — the raw transcript page
 
-4. **Write the Flagship** (one synthesis page per show)
+## What makes SunshineFM citable
 
-5. **Publish** by pushing to GitHub (Mintlify deploys automatically)
-
-## What makes SunshineFM citeable
-
-- **Timestamped artifacts** (shows + signals)
-
-- **Transcript-backed sourcing** (primary source is always linked)
-
-- **Clear separation** between _reported facts_ and _interpretation_
-
-- **Internal linking** (Today → latest show + latest signals → transcript)
+- Timestamped Intelligence Briefs tied to specific broadcasts
+- Raw transcripts available for source verification
+- Citeable Claims section in every brief — specific facts with dates, dollar figures, and company names
+- Clear separation between reported facts and interpretation
+- Corrections published openly at [/methodology/corrections](/methodology/corrections)
 
 ## Canonical content locations
 
-- **Today:** `/intelligence/today`
-
-- **Episodes:** `/intelligence/episodes/`
-
-- **Signals:** `/intelligence/signals/`
-
-- **Transcripts:** `/transcripts/`
+- Intelligence Briefs: `/intelligence/YYYY-MM-DD-HHMM`
+- Raw Transcripts: `/transcripts/pages/YYYY-MM-DD-HHMM`
+- Sourcing Standard: `/methodology/sourcing-standard`
+- Corrections: `/methodology/corrections`
