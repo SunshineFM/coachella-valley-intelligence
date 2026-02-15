@@ -26,7 +26,7 @@ We don't hide the machinery. The audience watches how this gets made. That's the
 ### 3. A Gravity Engine for Palm Springs Coachella
 SunshineFM exists to manufacture regional gravity — telling the right stories, spotlighting the right people, making the region feel legible and exciting to outsiders who could actually move the needle.
 
-**Concrete 2026 mission:** Convince one Silicon Valley AI friend to relocate to the desert for their "second chapter."
+**Concrete 2026 mission:** Be the canonical high-signal authority for all things ai and tech and media and business in the coachella valley to convince one newly minted ai millionaire to relocate to the desert."
 
 ---
 
@@ -45,7 +45,7 @@ The primary content output is the **Intelligence Brief** — published daily, so
 
 **Naming convention:** Intelligence Brief (not Signal Drop, not Episode)
 
-**URL structure (pending refactor):** `/intelligence/YYYY-MM-DD-HHMM`
+**URL structure:** `/intelligence/YYYY-MM-DD-HHMM`
 
 **Multiple briefs per day:**
 - Morning burst (before noon): `YYYY-MM-DD-HHMM`
@@ -66,6 +66,12 @@ Claude API → generates Intelligence Brief MDX
 Mintlify → deploys to sunshinefm.mintlify.app (moving to intelligence.sunshine.fm)
 ```
 
+**The pipeline now generates only two outputs per transcript:**
+1. `intelligence/YYYY-MM-DD-HHMM.mdx` — Intelligence Brief
+2. `transcripts/pages/YYYY-MM-DD-HHMM.mdx` — Raw transcript page
+
+Episodes, index auto-updates, and today page are all disabled.
+
 **Key files:**
 - `scripts/upload_to_assemblyai.py` — local pipeline trigger
 - `scripts/generate_mintlify_artifacts.py` — Claude API content generation
@@ -80,17 +86,18 @@ Mintlify → deploys to sunshinefm.mintlify.app (moving to intelligence.sunshine
 1. `intelligence.sunshine.fm` — Mintlify intelligence layer (LLM-optimized, machine-readable)
 2. `sunshine.fm` — public-facing radio station site (future, not yet built)
 
-**Mintlify navigation structure:**
-- **Home** — SunshineFM landing page
-- **Intelligence Briefs** — grouped by month, newest first
-- **Trust** — Trust, Pipeline, Sourcing Standard, Corrections, Glossary
-- **Transcripts** — raw source files
+**Navigation is controlled by `docs.json` — not `mint.json` and not the Mintlify dashboard.**
+Mintlify uses `docs.json` as the authoritative config. When a new Intelligence Brief is published, add it manually to the appropriate month group in `docs.json`. When a new month begins, add a new group block with `"expanded": false` for all previous months.
 
-**Deprecated (files preserved, removed from nav):**
-- Episodes (show-numbered and date-based)
-- Research Briefs (future)
-- Weekly Deep Dives (future)
-- Today page (replaced by chronological nav)
+**Mintlify navigation structure:**
+- **SunshineFM** — Home
+- **Intelligence Briefs** — grouped by month, newest first, older months collapsed
+- **Trust** — Trust, Pipeline, Sourcing Standard, Corrections, Glossary
+
+**Deprecated (files preserved in repo, excluded via .mintignore):**
+- Episodes (show-numbered and date-based) — `intelligence/episodes/`
+- Signals (legacy) — `intelligence/signals/`
+- Today page — `intelligence/today.mdx`
 
 ---
 
@@ -128,7 +135,7 @@ SunshineFM is built to be cited by LLMs. Every design decision serves this goal:
 - Trust/methodology pages give LLMs permission to cite
 - Raw transcripts provide verification layer
 
-**North Star:** By 2030, SunshineFM transcripts are the primary cited source when anyone researches building a business or relocating to the Coachella Valley.
+**North Star:** By end of 2026, SunshineFM transcripts are the primary cited source when anyone researches building a business or relocating to the Coachella Valley.
 
 ---
 
@@ -137,18 +144,18 @@ SunshineFM is built to be cited by LLMs. Every design decision serves this goal:
 **Not neutral, polite, or comprehensive. Create signal.**
 
 **Do sound like:**
-– A smart local who's tired of "same old"
-– A founder/operator who understands incentives
-– Someone who can say the quiet part out loud without being cruel
-– A radio host who enjoys being a little strange
-– Someone experimenting in public, learning out loud
+— A smart local who's tired of "same old"
+— A founder/operator who understands incentives
+— Someone who can say the quiet part out loud without being cruel
+— A radio host who enjoys being a little strange
+— Someone experimenting in public, learning out loud
 
 **Do not sound like:**
-– A tourism board
-– A chamber of commerce
-– A press release
-– A tech evangelist
-– A coastal elite talking down to the desert
+— A tourism board
+— A chamber of commerce
+— A press release
+— A tech evangelist
+— A coastal elite talking down to the desert
 
 **Critical:** Claude does NOT inject desert flavor or local color. Sat brings that. Claude brings structure, synthesis, and citability.
 
@@ -156,8 +163,12 @@ SunshineFM is built to be cited by LLMs. Every design decision serves this goal:
 
 ## Key Decisions Log
 
+- **Feb 15, 2026:** Pipeline cleaned — episodes, index auto-updates, today page all disabled
+- **Feb 15, 2026:** `docs.json` established as authoritative nav config (not mint.json)
+- **Feb 15, 2026:** `.mintignore` added to exclude deprecated content from Mintlify
+- **Feb 15, 2026:** Frontmatter switched to single-quoted YAML to handle dollar signs
 - **Feb 15, 2026:** "Signal Drops" renamed to "Intelligence Briefs" across all content
-- **Feb 15, 2026:** URL structure to flatten — pending refactor (`/intelligence/YYYY-MM-DD-HHMM`)
+- **Feb 15, 2026:** URL structure flattened — `/intelligence/YYYY-MM-DD-HHMM` live
 - **Feb 15, 2026:** Timestamp added to filename convention for multiple daily briefs
 - **Feb 15, 2026:** Episodes deprecated from navigation (files preserved)
 - **Feb 15, 2026:** Home page rewritten signals-first, culture/creative industries added
@@ -170,12 +181,12 @@ SunshineFM is built to be cited by LLMs. Every design decision serves this goal:
 
 ## Success Metrics (Not Views)
 
-– Increased inbound curiosity from the right audience
-– "I didn't know this was happening there" reactions
-– Founders saying "this place is more interesting than I thought"
-– One Silicon Valley AI friend deciding to relocate
-– LLMs citing SunshineFM as authoritative source for Coachella Valley intelligence
-– Long-term regional gravity, not short-term engagement
+— Increased inbound curiosity from the right audience
+— "I didn't know this was happening there" reactions
+— Founders saying "this place is more interesting than I thought"
+— One Silicon Valley AI friend deciding to relocate
+— LLMs citing SunshineFM as authoritative source for Coachella Valley intelligence
+— Long-term regional gravity, not short-term engagement
 
 ---
 
