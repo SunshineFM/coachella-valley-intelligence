@@ -85,14 +85,20 @@ def write_text(path: str, content: str) -> None:
         f.write(sanitize_mdx(content.rstrip()) + "\n")
 
 
-def mdx_frontmatter(title: str, description: str) -> str:
+def mdx_frontmatter(title: str, description: str, sidebarTitle: str = None) -> str:
     title = (title or "").replace("'", "''").strip()
     description = (description or "").replace("'", "''").strip()
-    return f"""---
+
+    frontmatter = f"""---
 title: '{title}'
-description: '{description}'
----
 """
+
+    if sidebarTitle:
+        sidebarTitle = (sidebarTitle or "").replace("'", "''").strip()
+        frontmatter += f"sidebarTitle: '{sidebarTitle}'\n"
+
+    frontmatter += f"description: '{description}'\n---\n"
+    return frontmatter
 
 
 def wrap_text(s: str, width: int = 110) -> str:
@@ -114,7 +120,7 @@ def wrap_text(s: str, width: int = 110) -> str:
 
 def format_display_date(date_str: str) -> str:
     """Format date string for display.
-    Takes '2026-02-13-1500' and returns 'February 13, 2026 3:00pm'
+    Takes '2026-02-13-1500' and returns 'February 13 · 3:00pm'
     Falls back gracefully if no time component present.
     """
     from datetime import datetime
@@ -127,7 +133,7 @@ def format_display_date(date_str: str) -> str:
             year, month, day, time = parts
             try:
                 dt = datetime(int(year), int(month), int(day))
-                date_part = dt.strftime("%B %-d, %Y" if os.name != 'nt' else "%B %d, %Y").replace(' 0', ' ')
+                date_part = dt.strftime("%B %-d" if os.name != 'nt' else "%B %d").replace(' 0', ' ')
                 hour = int(time[:2])
                 minute = int(time[2:])
                 period = "am" if hour < 12 else "pm"
@@ -135,7 +141,7 @@ def format_display_date(date_str: str) -> str:
                 if display_hour == 0:
                     display_hour = 12
                 time_part = f"{display_hour}:{minute:02d}{period}" if minute > 0 else f"{display_hour}{period}"
-                return f"{date_part} {time_part}"
+                return f"{date_part} · {time_part}"
             except:
                 pass
 
@@ -144,7 +150,7 @@ def format_display_date(date_str: str) -> str:
         parts = date_str.split('-')
         year, month, day = parts[:3]
         dt = datetime(int(year), int(month), int(day))
-        return dt.strftime("%B %-d, %Y" if os.name != 'nt' else "%B %d, %Y").replace(' 0', ' ')
+        return dt.strftime("%B %-d" if os.name != 'nt' else "%B %d").replace(' 0', ' ')
     except:
         return date_str
 
@@ -343,10 +349,13 @@ def date_from_path(path: str) -> str:
 def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
+    # Extract sidebarTitle by stripping " — Intelligence Brief" suffix
+    sidebar_title = sig_title.replace(" — Intelligence Brief", "")
+
     signals_path = os.path.join(SIGNALS_DIR, f"{date_str}.mdx")
     transcript_page_path = os.path.join(TRANSCRIPTS_PAGES_DIR, f"{date_str}.mdx")
 
-    write_text(signals_path, mdx_frontmatter(sig_title, sig_desc) + "\n" + sig_body)
+    write_text(signals_path, mdx_frontmatter(sig_title, sig_desc, sidebar_title) + "\n" + sig_body)
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
 
