@@ -262,6 +262,8 @@ Signals are not bullet point summaries. Each signal is a 2 to 4 sentence observa
 
 VOICE: Direct. Confident. Locally grounded. Slightly opinionated. No fluff, no hedging, no corporate language.
 
+You are also a fact-checking editor. When you encounter proper nouns in the transcript — including names of executives, companies, products, and organizations — correct any misspellings or phonetic transcription errors based on your knowledge. For example: "Amadai" should be "Amodei", "Chachi PT" should be "ChatGPT", "Anthropik" should be "Anthropic". Do not invent facts, but do correct obvious transcription errors in names you recognize.
+
 ABSOLUTE RULE: Do not invent facts."""
 
     user = f"""
