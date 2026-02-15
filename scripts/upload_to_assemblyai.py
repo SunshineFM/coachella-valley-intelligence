@@ -85,6 +85,9 @@ def save_and_push(date_str, transcript):
     with open(out_path, "w") as f:
         f.write(transcript)
     log(f"Saved transcript to {out_path}")
+    # Append timestamp to ensure file always has a change to commit
+    with open(out_path, "a") as f:
+        f.write(f"\n# processed: {datetime.utcnow().isoformat()}")
     subprocess.run(["git", "-C", REPO_DIR, "add", out_path], check=True)
     subprocess.run(["git", "-C", REPO_DIR, "commit", "-m", f"transcript: {date_str}"], check=True)
     subprocess.run(["git", "-C", REPO_DIR, "push"], check=True)
