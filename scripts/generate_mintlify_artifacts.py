@@ -233,6 +233,7 @@ REQUIREMENTS:
 - Each signal body is 2 to 4 sentences — specific, local, opinionated
 - End with a "## Local Radar" section: 3 to 5 upcoming local events, opportunities, or things worth watching in the Valley this week. Be specific — names, dates, locations where available.
 - Do NOT invent facts
+- Do NOT include an H1 or H2 title at the top of the body — the frontmatter title handles that automatically
 
 FORMAT EXAMPLE:
 **$285B Wiped From Software Stocks After Anthropic Cowork Launch**
