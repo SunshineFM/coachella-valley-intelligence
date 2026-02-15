@@ -14,7 +14,14 @@ import subprocess
 import urllib.request
 from datetime import datetime
 
-ASSEMBLY_API_KEY = "7dececb4df024a7a8b61c38abc83d93a"
+# Read API key from .env file
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            if _line.startswith("ASSEMBLYAI_API_KEY="):
+                os.environ["ASSEMBLYAI_API_KEY"] = _line.strip().split("=", 1)[1]
+ASSEMBLY_API_KEY = os.environ.get("ASSEMBLYAI_API_KEY", "")
 REPO_DIR = os.path.expanduser("~/coachella-valley-intelligence")
 TRANSCRIPTS_DIR = os.path.join(REPO_DIR, "transcripts/source")
 
