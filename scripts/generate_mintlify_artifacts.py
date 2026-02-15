@@ -272,7 +272,7 @@ def changed_transcripts() -> List[str]:
             candidates.append((os.path.getmtime(full), full))
 
     candidates.sort(reverse=True)
-    return []  # No date specified -- use --date argument
+    return [c[1] for c in candidates]  # Return all unprocessed transcripts
 
 
 def make_transcript_page(date_str: str, transcript: str) -> str:
