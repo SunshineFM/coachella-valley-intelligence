@@ -56,6 +56,10 @@ The primary content output is the **Intelligence Brief** — published daily, so
 
 ## The Automated Pipeline
 
+**Broadcast schedule:**
+- Monday–Friday: Daily show at 3:00 PM PST + spontaneous break-ins throughout the day
+- Saturday–Sunday: Reserved for deep research and weekly Intelligence Report (in development)
+
 ```
 Audio Hijack → VoiceOnly MP3 saved to ~/coachella-valley-intelligence/recordings/
 Hazel → detects VoiceOnly MP3 added today → runs upload_to_assemblyai.py
