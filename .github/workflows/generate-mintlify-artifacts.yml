@@ -3,7 +3,7 @@ name: Generate Mintlify artifacts from transcripts
 on:
   push:
     paths:
-      - "transcripts/*-raw.txt"
+      - "transcripts/source/*.txt"
 
   workflow_run:
     workflows: ["Import transcript from sunshinefm-website"]
@@ -39,8 +39,7 @@ jobs:
 
       - name: Generate episode + signals + update Today
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: gpt-4o-mini
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
           python3 scripts/generate_mintlify_artifacts.py
