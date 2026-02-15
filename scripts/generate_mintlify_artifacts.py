@@ -57,7 +57,14 @@ def claude_chat(system: str, user: str) -> str:
 
 
 def sanitize_mdx(text: str) -> str:
-    """Escape dollar signs so Mintlify MDX does not treat them as LaTeX math."""
+    """Escape dollar signs in MDX body only, not in frontmatter."""
+    if text.startswith("---"):
+        # Split frontmatter from body
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            # parts[0] is empty, parts[1] is frontmatter, parts[2] is body
+            body = re.sub(r"(?<!\\)\$", r"\\$", parts[2])
+            return "---" + parts[1] + "---" + body
     return re.sub(r"(?<!\\)\$", r"\\$", text)
 
 def ensure_dirs() -> None:
