@@ -28,8 +28,13 @@ TRANSCRIPTS_DIR = os.path.join(REPO_DIR, "transcripts/source")
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
-def extract_date(filename):
-    """Extract YYYY-MM-DD from Audio Hijack filename like '14 20260214 1500 VoiceOnly.mp3'"""
+def extract_date_time(filename):
+    """Extract YYYY-MM-DD-HHMM from Audio Hijack filename like '14 20260214 1500 VoiceOnly.mp3'"""
+    # Pattern: DD YYYYMMDD HHMM VoiceOnly.mp3
+    m = re.search(r'(\d{4})(\d{2})(\d{2})\s+(\d{4})', filename)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}-{m.group(4)}"
+    # Fallback: try date only
     m = re.search(r'(\d{4})(\d{2})(\d{2})', filename)
     if m:
         return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
@@ -98,8 +103,8 @@ if __name__ == "__main__":
     if not mp3_path or not os.path.exists(mp3_path):
         print("Usage: upload_to_assemblyai.py <path_to_mp3>")
         sys.exit(1)
-    date_str = extract_date(os.path.basename(mp3_path))
-    log(f"Processing {mp3_path} for date {date_str}")
+    date_str = extract_date_time(os.path.basename(mp3_path))
+    log(f"Processing {mp3_path} for datetime {date_str}")
     upload_url = upload_mp3(mp3_path)
     transcript_id = request_transcript(upload_url)
     transcript = poll_transcript(transcript_id)

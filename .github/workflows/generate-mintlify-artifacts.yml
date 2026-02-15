@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: "Transcript date to generate (YYYY-MM-DD). Leave blank to auto-detect."
+        description: "Transcript date to generate (YYYY-MM-DD or YYYY-MM-DD-HHMM). Leave blank to auto-detect."
         required: false
         default: ""
 
@@ -58,7 +58,7 @@ jobs:
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          git add intelligence/episodes intelligence/signals transcripts || true
+          git add intelligence transcripts || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."

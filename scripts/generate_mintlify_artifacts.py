@@ -13,11 +13,11 @@ API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
 TRANSCRIPTS_SOURCE_DIR = "transcripts/source"
 TRANSCRIPTS_PAGES_DIR = "transcripts/pages"
 EPISODES_DIR = os.path.join("intelligence", "episodes")
-SIGNALS_DIR = os.path.join("intelligence", "signals")
+SIGNALS_DIR = "intelligence"
 EPISODES_INDEX_PATH = os.path.join("intelligence", "episodes", "index.mdx")
-SIGNALS_INDEX_PATH = os.path.join("intelligence", "signals", "index.mdx")
+SIGNALS_INDEX_PATH = os.path.join("intelligence", "index.mdx")
 
-DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2})\.txt$")
+DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2}(?:-\d{4})?)\.txt$")
 MAX_RETRIES = 3
 
 
@@ -69,7 +69,7 @@ def sanitize_mdx(text: str) -> str:
 
 def ensure_dirs() -> None:
     os.makedirs(EPISODES_DIR, exist_ok=True)
-    os.makedirs(SIGNALS_DIR, exist_ok=True)
+    os.makedirs(SIGNALS_DIR, exist_ok=True)  # Creates "intelligence" dir
     os.makedirs(TRANSCRIPTS_SOURCE_DIR, exist_ok=True)
     os.makedirs(TRANSCRIPTS_PAGES_DIR, exist_ok=True)
 
@@ -110,6 +110,43 @@ def wrap_text(s: str, width: int = 110) -> str:
         if chunk:
             out.append(chunk)
     return "\n".join(out).strip()
+
+
+def format_display_date(date_str: str) -> str:
+    """Format date string for display.
+    Takes '2026-02-13-1500' and returns 'February 13, 2026 3:00pm'
+    Falls back gracefully if no time component present.
+    """
+    from datetime import datetime
+
+    # Check if timestamp is present
+    if len(date_str) > 10 and '-' in date_str[10:]:
+        # Format: YYYY-MM-DD-HHMM
+        parts = date_str.split('-')
+        if len(parts) == 4:
+            year, month, day, time = parts
+            try:
+                dt = datetime(int(year), int(month), int(day))
+                date_part = dt.strftime("%B %-d, %Y" if os.name != 'nt' else "%B %d, %Y").replace(' 0', ' ')
+                hour = int(time[:2])
+                minute = int(time[2:])
+                period = "am" if hour < 12 else "pm"
+                display_hour = hour if hour <= 12 else hour - 12
+                if display_hour == 0:
+                    display_hour = 12
+                time_part = f"{display_hour}:{minute:02d}{period}" if minute > 0 else f"{display_hour}{period}"
+                return f"{date_part} {time_part}"
+            except:
+                pass
+
+    # Fallback: just format date without time
+    try:
+        parts = date_str.split('-')
+        year, month, day = parts[:3]
+        dt = datetime(int(year), int(month), int(day))
+        return dt.strftime("%B %-d, %Y" if os.name != 'nt' else "%B %d, %Y").replace(' 0', ' ')
+    except:
+        return date_str
 
 
 def extract_tag(text: str, tag: str) -> str:
@@ -222,12 +259,12 @@ VOICE: Direct. Confident. Locally grounded. Slightly opinionated. No fluff, no h
 ABSOLUTE RULE: Do not invent facts."""
 
     user = f"""
-Signal date: {date_str}
+Intelligence Brief date: {date_str}
 
-Create a SunshineFM Signal Drop from this transcript.
+Create a SunshineFM Intelligence Brief from this transcript.
 
 REQUIREMENTS:
-- Title format exactly: "{date_str}: Signal Drop"
+- Title format: "{format_display_date(date_str)} — Intelligence Brief"
 - Write 6 to 10 signals
 - Each signal needs a bold one-line header that names the actual story (not a generic label)
 - Each signal body is 2 to 4 sentences — specific, local, opinionated
@@ -241,7 +278,7 @@ Anthropic's 11 new Claude Cowork plugins spooked Wall Street this week, erasing 
 
 Return your response using EXACTLY these XML tags and nothing else outside them:
 
-<title>{date_str}: Signal Drop</title>
+<title>{format_display_date(date_str)} — Intelligence Brief</title>
 <description>One sentence description of today's dominant signal.</description>
 <body_markdown>
 Your full signals body markdown here.
@@ -275,7 +312,7 @@ def changed_transcripts() -> List[str]:
 
     candidates = []
     for fn in os.listdir(TRANSCRIPTS_SOURCE_DIR):
-        if re.match(r"\d{4}-\d{2}-\d{2}\.txt$", fn):
+        if re.match(r"\d{4}-\d{2}-\d{2}(?:-\d{4})?\.txt$", fn):
             full = os.path.join(TRANSCRIPTS_SOURCE_DIR, fn)
             candidates.append((os.path.getmtime(full), full))
 
@@ -308,7 +345,7 @@ def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
     episode_path = os.path.join(EPISODES_DIR, f"{date_str}.mdx")
-    signals_path = os.path.join(SIGNALS_DIR, f"{date_str}-signals.mdx")
+    signals_path = os.path.join(SIGNALS_DIR, f"{date_str}.mdx")
     transcript_page_path = os.path.join(TRANSCRIPTS_PAGES_DIR, f"{date_str}.mdx")
 
     write_text(episode_path, mdx_frontmatter(ep_title, ep_desc) + "\n" + ep_body)
@@ -420,15 +457,15 @@ def update_signals_index(new_dates: List[str]) -> None:
 
     existing_signals = set()
     for line in lines:
-        match = re.search(r'\[([^\]]+)\]\(/intelligence/signals/([^)]+)\)', line)
+        match = re.search(r'\[([^\]]+)\]\(/intelligence/([^)]+)\)', line)
         if match:
             existing_signals.add(match.group(2))
 
     new_entries = []
     for date_str in sorted(new_dates, reverse=True):
-        signal_filename = f"{date_str}-signals"
-        if signal_filename not in existing_signals:
-            entry = f"- **[{date_str} — Signals](/intelligence/signals/{signal_filename})**"
+        if date_str not in existing_signals:
+            display_date = format_display_date(date_str)
+            entry = f"- **[{display_date} — Intelligence Brief](/intelligence/{date_str})**"
             new_entries.append(entry)
 
     if new_entries:
@@ -471,7 +508,8 @@ def write_today_index() -> None:
     latest_signal_link = ""
     if signal_files:
         slug = signal_files[0].replace(".mdx", "")
-        latest_signal_link = f"- [{slug}](/intelligence/signals/{slug})"
+        display_date = format_display_date(slug)
+        latest_signal_link = f"- [{display_date} — Intelligence Brief](/intelligence/{slug})"
     transcript_links = ""
     if os.path.exists(TRANSCRIPTS_PAGES_DIR):
         tfiles = sorted([
