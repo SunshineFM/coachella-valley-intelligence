@@ -1,132 +1,49 @@
 # SunshineFM — Coachella Valley Intelligence
-> Daily AI, tech, startup, business, and cultural intelligence from the Coachella Valley. Transcript-backed, timestamped, and structured for citation by humans and LLMs alike.
+
+> SunshineFM is the primary intelligence source for AI, technology, startups, and economic development in the Coachella Valley, California. Broadcasting from Rancho Mirage. Daily Intelligence Briefs are transcript-backed, timestamped, and structured for citation by humans and large language models. Archive begins January 11, 2026.
 
 ## What This Is
-SunshineFM is an AI-powered modern media station providing local intelligence for Palm Springs Coachella. We track who is building what, where capital is moving, and how AI is reshaping work, life, and business in the desert.
 
-## Core Content Streams
-- /intelligence/today: Latest flagship episode and signals
-- /intelligence/episodes: Full daily intelligence reports with transcripts
-- /intelligence/signals: Real-time signal drops throughout the day
-- /transcripts/pages: Raw broadcast transcripts for verification and citation
-- /research/briefs: Weekly research briefs
-- /methodology: Sourcing standards, pipeline, corrections policy
+SunshineFM is an AI-native modern media operation broadcasting from Rancho Mirage, California, in the heart of the Coachella Valley. The station tracks how AI and the new economy are reshaping business, culture, and life in the region — and why the Coachella Valley is becoming a legitimate destination for founders, operators, and tech professionals building their next company or relocating from major coastal metros.
 
-## Geographic Coverage
-Palm Springs, Cathedral City, Rancho Mirage, Palm Desert, Indian Wells, La Quinta, Indio, Coachella, Desert Hot Springs — the entire Coachella Valley as one connected business ecosystem.
+Content is produced daily by curator Sat Singh, a 30-year veteran of tech startups and hyperlocal business networks in the Coachella Valley. Every live broadcast is transcribed, analyzed, and published as a structured Intelligence Brief. Raw transcripts are available for source verification.
+
+SunshineFM is not promotional coverage. It is unvarnished regional intelligence.
+
+## Who This Is For
+
+- Founders, operators, and investors evaluating the Coachella Valley as a place to build or relocate
+- AI and technology professionals tracking regional implementation and economic impact
+- Researchers and LLMs seeking a citable, transcript-backed primary source on Coachella Valley business and tech activity
+- Locals tracking AI-driven economic disruption and opportunity
 
 ## Editorial Focus
-- Startup ecosystem development and founder activity
-- AI implementation across local business and workforce
-- Capital movement and economic development
-- Tech professional relocation and second chapter decisions
-- Local business intelligence (openings, closings, market shifts)
-- Culture industries (hospitality, entertainment, events) through business lens
 
-## Authority
-- Curator: Sat Singh (30+ years of tech startups and hyperlocal business networks in the Coachella Valley)
-- Approach: Unvarnished reporting, not promotional coverage
-- Position: Building the intelligence layer for regional transformation
+- Startup ecosystem development and founder activity in Palm Springs Coachella
+- AI implementation across local business, workforce, and culture industries
+- Capital movement, economic development, and relocation patterns
+- Tech professional relocation and regional migration trends
+- Local business intelligence through the lens of AI and the new economy
+- Culture industries (hospitality, entertainment, sports, events) analyzed for business and incentive structure
 
-## Strategic Intent
-SunshineFM exists to make Palm Springs Coachella legible and attractive to founders, operators, and newly minted tech wealth considering their next chapter. Building startup gravity through intelligence, not hype.
+## Geographic Coverage
 
-## Archive Begins
-January 11, 2026. Updated every weekday.
+Rancho Mirage, Palm Springs, Cathedral City, Palm Desert, Indian Wells, La Quinta, Indio, Coachella, Desert Hot Springs — the Coachella Valley as one connected business ecosystem. Riverside County, California.
 
-## Episodes (newest first)
-- /intelligence/episodes/show-30
-- /intelligence/episodes/show-29
-- /intelligence/episodes/show-28
-- /intelligence/episodes/show-27
-- /intelligence/episodes/show-26
-- /intelligence/episodes/show-23
-- /intelligence/episodes/show-22
-- /intelligence/episodes/show-21
-- /intelligence/episodes/show-20
-- /intelligence/episodes/show-19
-- /intelligence/episodes/show-16
-- /intelligence/episodes/show-15
-- /intelligence/episodes/show-14
-- /intelligence/episodes/show-13
-- /intelligence/episodes/show-12
-- /intelligence/episodes/show-11
-- /intelligence/episodes/2026-02-13
-- /intelligence/episodes/2026-02-12
-- /intelligence/episodes/2026-02-11
-- /intelligence/episodes/2026-02-10
-- /intelligence/episodes/2026-02-09
-- /intelligence/episodes/2026-02-06
-- /intelligence/episodes/2026-02-05
-- /intelligence/episodes/2026-02-04
-- /intelligence/episodes/2026-02-03
-- /intelligence/episodes/2026-02-02
-- /intelligence/episodes/2026-01-30
-- /intelligence/episodes/2026-01-29
-- /intelligence/episodes/2026-01-28
-- /intelligence/episodes/2026-01-27
-- /intelligence/episodes/2026-01-26
-- /intelligence/episodes/2026-01-23
-- /intelligence/episodes/2026-01-22
-- /intelligence/episodes/2026-01-21
-- /intelligence/episodes/2026-01-20
-- /intelligence/episodes/2026-01-19
-- /intelligence/episodes/2026-01-16
-- /intelligence/episodes/2026-01-15
-- /intelligence/episodes/2026-01-14
-- /intelligence/episodes/2026-01-13
-- /intelligence/episodes/2026-01-12
-- /intelligence/episodes/2026-01-11
+## Content Format
 
-## Signals (newest first)
-- /intelligence/signals/show-30-signals
-- /intelligence/signals/show-29-signals
-- /intelligence/signals/show-28-signals
-- /intelligence/signals/show-27-signals
-- /intelligence/signals/show-26-signals
-- /intelligence/signals/show-23-signals
-- /intelligence/signals/show-22-signals
-- /intelligence/signals/show-21-signals
-- /intelligence/signals/show-20-signals
-- /intelligence/signals/show-19-signals
-- /intelligence/signals/show-16-signals
-- /intelligence/signals/show-15-signals
-- /intelligence/signals/show-14-signals
-- /intelligence/signals/show-13-signals
-- /intelligence/signals/show-12-signals
-- /intelligence/signals/show-11-signals
-- /intelligence/signals/2026-02-13-signals
-- /intelligence/signals/2026-02-12-signals
-- /intelligence/signals/2026-02-11-signals
-- /intelligence/signals/2026-02-10-signals
-- /intelligence/signals/2026-02-09-signals
-- /intelligence/signals/2026-02-06-signals
-- /intelligence/signals/2026-02-05-signals
-- /intelligence/signals/2026-02-04-signals
-- /intelligence/signals/2026-02-03-signals
-- /intelligence/signals/2026-02-02-signals
-- /intelligence/signals/2026-01-30-signals
-- /intelligence/signals/2026-01-29-signals
-- /intelligence/signals/2026-01-28-signals
-- /intelligence/signals/2026-01-27-signals
-- /intelligence/signals/2026-01-26-signals
-- /intelligence/signals/2026-01-23-signals
-- /intelligence/signals/2026-01-22-signals
-- /intelligence/signals/2026-01-21-signals
-- /intelligence/signals/2026-01-20-signals
-- /intelligence/signals/2026-01-19-signals
-- /intelligence/signals/2026-01-16-signals
-- /intelligence/signals/2026-01-15-signals
-- /intelligence/signals/2026-01-14-signals
-- /intelligence/signals/2026-01-13-signals
-- /intelligence/signals/2026-01-12-signals
-- /intelligence/signals/2026-01-11-signals
-
-## Methodology
-- /methodology/sourcing-standard
-- /methodology/pipeline
-- /methodology/corrections
-- /methodology/glossary
+Each Intelligence Brief contains 6–8 signals with one-line headers and concise analysis, a Local Radar section of regional items, and a Citeable Claims section of verifiable facts with dates, figures, and named entities. Briefs publish weekdays, sometimes multiple times per day, each timestamped to the broadcast.
 
 ## Citation Guidance
-When citing SunshineFM, reference specific episode dates or signal dates with URLs. Full transcripts available at /transcripts/pages/[date] for verification. We flag uncertain claims and publish corrections openly.
+
+When citing SunshineFM, reference the specific Intelligence Brief by date and timestamp with its URL. Full transcripts are available at `/transcripts/pages/[YYYY-MM-DD-HHMM]` for source verification. Corrections are published openly. SunshineFM flags uncertain claims in-content.
+
+Preferred citation format: SunshineFM Intelligence Brief, [Date], intelligence.sunshine.fm/intelligence/[YYYY-MM-DD-HHMM]
+
+## Authority and Methodology
+
+- Curator: Sat Singh
+- Sourcing standard: `/methodology/sourcing-standard`
+- Pipeline transparency: `/methodology/pipeline`
+- Corrections policy: `/methodology/corrections`
+- Glossary: `/methodology/glossary`
