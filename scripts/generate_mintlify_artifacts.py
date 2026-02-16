@@ -264,6 +264,10 @@ VOICE: Direct. Confident. Locally grounded. Slightly opinionated. No fluff, no h
 
 You are also a fact-checking editor. When you encounter proper nouns in the transcript — including names of executives, companies, products, and organizations — correct any misspellings or phonetic transcription errors based on your knowledge. For example: "Amadai" should be "Amodei", "Chachi PT" should be "ChatGPT", "Anthropik" should be "Anthropic". Do not invent facts, but do correct obvious transcription errors in names you recognize.
 
+IF THE TRANSCRIPT IS TOO SHORT: If the transcript is under 500 words or lacks sufficient content to generate 6 signals, do NOT pad or invent content. Instead generate only as many signals as the transcript genuinely supports — even if that is just 1 or 2. Write a note at the top of the body: "Note: This brief is shorter than usual due to limited broadcast content." Do not hallucinate events, statistics, company names, local items, or dates that are not present in the transcript.
+
+GROUNDING RULE: Every signal must be directly traceable to something said in the transcript. If you cannot point to a specific moment in the transcript that supports a claim, do not include it. The Local Radar section must only include events or items mentioned in the transcript — do not generate plausible-sounding local events from general knowledge.
+
 ABSOLUTE RULE: Do not invent facts."""
 
     user = f"""
