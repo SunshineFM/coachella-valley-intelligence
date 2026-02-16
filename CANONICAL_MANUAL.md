@@ -67,7 +67,7 @@ AssemblyAI → transcribes → saves YYYY-MM-DD-HHMM.txt to transcripts/source/
 Git → commits and pushes transcript
 GitHub Actions → runs generate_mintlify_artifacts.py with --date YYYY-MM-DD-HHMM
 Claude API → generates Intelligence Brief MDX
-Mintlify → deploys to sunshinefm.mintlify.app (moving to intelligence.sunshine.fm)
+Mintlify → deploys to intelligence.sunshine.fm (live as of February 15, 2026)
 ```
 
 **The pipeline now generates only two outputs per transcript:**

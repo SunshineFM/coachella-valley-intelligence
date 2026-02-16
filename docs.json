@@ -1,5 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "baseUrl": "https://intelligence.sunshine.fm",
   "name": "SunshineFM — Coachella Valley Intelligence",
   "description": "The intelligence layer for Palm Springs Coachella: daily signals, transcripts, and AI + business ecosystem reporting for the Coachella Valley.",
   "theme": "mint",
