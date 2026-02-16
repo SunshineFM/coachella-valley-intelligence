@@ -15,3 +15,11 @@ __pycache__/
 *.pyc
 
 .env
+
+# Internal documentation and working files
+CANONICAL_MANUAL.md
+MEMORY.md
+OPERATING_INSTRUCTIONS.md
+COWORK_BRIEF_TEMPLATE.md
+REFACTOR_COMPLETE_2026-02-15.md
+COWORK_REFACTOR_2026-02-15.md
