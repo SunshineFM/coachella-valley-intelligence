@@ -58,7 +58,7 @@ jobs:
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          git add intelligence transcripts || true
+          git add intelligence transcripts docs.json || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."

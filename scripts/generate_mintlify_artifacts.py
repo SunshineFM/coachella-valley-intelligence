@@ -352,6 +352,79 @@ def date_from_path(path: str) -> str:
     return m.group(1) if m else ""
 
 
+def update_docs_json(date_str: str) -> None:
+    """Update docs.json with the new intelligence brief.
+
+    Prepends the new brief to the appropriate month group.
+    Creates the month group if it doesn't exist, and sets the previous month to expanded: false.
+    """
+    from datetime import datetime
+    import calendar
+
+    docs_path = "docs.json"
+
+    # Read current docs.json
+    with open(docs_path, 'r', encoding='utf-8') as f:
+        docs = json.load(f)
+
+    # Extract year and month from date_str
+    parts = date_str.split('-')
+    year = int(parts[0])
+    month = int(parts[1])
+    month_name = calendar.month_name[month]
+    month_label = f"{month_name} {year}"
+
+    # Find the Intelligence Briefs group
+    intel_briefs_group = None
+    for group in docs['navigation']['groups']:
+        if group['group'] == 'Intelligence Briefs':
+            intel_briefs_group = group
+            break
+
+    if not intel_briefs_group:
+        raise ValueError("Could not find 'Intelligence Briefs' group in docs.json")
+
+    # Find or create the month group
+    # pages should be: ["intelligence/index", {...month groups...}]
+    # Start from index 1 (after intelligence/index)
+    pages = intel_briefs_group['pages']
+    month_group_idx = None
+    month_group = None
+
+    for idx, page in enumerate(pages[1:], start=1):  # Skip the first item (intelligence/index)
+        if isinstance(page, dict) and page.get('group') == month_label:
+            month_group_idx = idx
+            month_group = page
+            break
+
+    brief_path = f"intelligence/{date_str}"
+
+    if month_group:
+        # Month group exists, prepend the new brief if not already present
+        if brief_path not in month_group['pages']:
+            month_group['pages'].insert(0, brief_path)
+            print(f"  → Added {brief_path} to existing '{month_label}' group")
+    else:
+        # Create new month group
+        # First, set previous month (if any) to expanded: false
+        if len(pages) > 1 and isinstance(pages[1], dict):
+            pages[1]['expanded'] = False
+            print(f"  → Set '{pages[1]['group']}' to expanded: false")
+
+        # Create and insert new month group at position 1 (after intelligence/index)
+        new_month_group = {
+            "group": month_label,
+            "pages": [brief_path]
+        }
+        pages.insert(1, new_month_group)
+        print(f"  → Created new month group '{month_label}' with {brief_path}")
+
+    # Write back to docs.json
+    with open(docs_path, 'w', encoding='utf-8') as f:
+        json.dump(docs, f, indent=2, ensure_ascii=False)
+        f.write('\n')  # Add trailing newline
+
+
 def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
@@ -363,6 +436,9 @@ def write_outputs(date_str: str, transcript: str) -> None:
 
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc, sidebar_title) + "\n" + sig_body)
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
+
+    # Update docs.json with the new brief
+    update_docs_json(date_str)
 
 
 def update_episodes_index(new_dates: List[str]) -> None:
