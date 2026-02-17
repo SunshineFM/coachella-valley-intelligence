@@ -96,6 +96,9 @@ title: '{title}'
     if sidebarTitle:
         sidebarTitle = (sidebarTitle or "").replace("'", "''").strip()
         frontmatter += f"sidebarTitle: '{sidebarTitle}'\n"
+        frontmatter += "author: 'Sat Singh'\n"
+        frontmatter += "location: 'Rancho Mirage, California'\n"
+        frontmatter += "geographic_scope: 'Coachella Valley'\n"
 
     frontmatter += f"description: '{description}'\n---\n"
     return frontmatter
@@ -281,6 +284,8 @@ REQUIREMENTS:
 - Each signal needs a bold one-line header that names the actual story (not a generic label)
 - Each signal body is 2 to 4 sentences — specific, local, opinionated
 - End with a "## Local Radar" section: 3 to 5 upcoming local events, opportunities, or things worth watching in the Valley this week. Be specific — names, dates, locations where available.
+- After Local Radar, add a "## Citeable Claims" section: 6-10 specific verifiable facts as a bulleted list. Include dates, dollar figures, company names, named individuals, and specific metrics from the transcript. Each claim should be independently verifiable.
+- After Citeable Claims, add a "## The Signal" section: 2-3 sentences synthesizing the day's signals into one coherent thesis about what's changing and why it matters to Coachella Valley founders, operators, and decision-makers.
 - Do NOT invent facts
 - Do NOT include an H1 or H2 title at the top of the body — the frontmatter title handles that automatically
 
