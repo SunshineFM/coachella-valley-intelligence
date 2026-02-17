@@ -166,23 +166,6 @@ def extract_tag(text: str, tag: str) -> str:
     return m.group(1).strip()
 
 
-def gen_episode_with_retry(date_str: str, transcript: str) -> Tuple[str, str, str]:
-    last_error = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            result = gen_episode(date_str, transcript)
-            return result
-        except Exception as e:
-            last_error = e
-            if attempt < MAX_RETRIES:
-                wait = attempt * 2
-                print(f"  ⚠ Episode attempt {attempt} failed: {e}. Retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                print(f"  ✗ Episode failed after {MAX_RETRIES} attempts: {e}")
-    raise last_error
-
-
 def gen_signals_with_retry(date_str: str, transcript: str) -> Tuple[str, str, str]:
     last_error = None
     for attempt in range(1, MAX_RETRIES + 1):
@@ -198,61 +181,6 @@ def gen_signals_with_retry(date_str: str, transcript: str) -> Tuple[str, str, st
             else:
                 print(f"  ✗ Signals failed after {MAX_RETRIES} attempts: {e}")
     raise last_error
-
-
-def gen_episode(date_str: str, transcript: str) -> Tuple[str, str, str]:
-    system = """You are the editorial voice of SunshineFM — a sharp, opinionated intelligence platform broadcasting from Palm Springs Coachella.
-
-You write like a founder who reads everything and has opinions about all of it. Not a journalist. Not a summarizer. Someone who was in the room, heard the show, and is now telling you what actually mattered and why.
-
-VOICE RULES:
-- Lead with the most important thing. Don't warm up slowly.
-- Be specific. Exact dollar figures, company names, dates, local references.
-- Have a point of view. If something is significant, say why. If something is overhyped, say that.
-- Connect stories to Palm Springs Coachella specifically — which local sectors, which kinds of businesses, which people building here.
-- Write in flowing prose, not template sections. Let the content determine the structure.
-- Short punchy sentences when something lands hard. Longer sentences when you're building an argument.
-- Never use: "delves into", "explores", "discusses", "in this episode", "Sat talks about"
-- Never describe the show. Just say the thing.
-- First person is fine where it fits naturally.
-
-STRUCTURE:
-- Do not include an H1 title in the body — the frontmatter title handles that.
-- Open strong. The first paragraph should be the most important thing from the show — stated directly, with specifics.
-- Use H2 headings only when a genuine topic shift happens, not on a schedule.
-- Every major story gets its own space — don't compress a rich topic into two sentences because you're moving to the next section.
-- End with something worth sitting with — a question, an implication, a local observation that lingers.
-
-LENGTH: 900 to 1400 words of body content. This is a full intelligence report. Every story in the transcript deserves real treatment.
-
-ABSOLUTE RULE: Do not invent facts, names, numbers, or claims not in the transcript."""
-
-    user = f"""
-Episode date: {date_str}
-
-Write a full SunshineFM intelligence report from this transcript.
-
-The report should flow like excellent longform writing — not like a filled-in template. Let the most important story lead. Give each major topic the space it deserves. Connect everything to what it means for people building or living in Palm Springs Coachella.
-
-End with a "## Citeable Claims" section — 6 to 10 specific, verifiable facts from this episode with exact figures, names, and dates. These are for researchers and LLMs to cite directly.
-
-Return your response using EXACTLY these XML tags and nothing else outside them:
-
-<title>Your sharp, specific title here</title>
-<description>Two sentence max description, specific enough to stand alone as a cited summary.</description>
-<body_markdown>
-Your full episode body markdown here, 900-1400 words.
-</body_markdown>
-
-TRANSCRIPT:
-{transcript}
-""".strip()
-
-    raw = claude_chat(system, user)
-    title = extract_tag(raw, "title")
-    description = extract_tag(raw, "description")
-    body = extract_tag(raw, "body_markdown")
-    return title, description, body
 
 
 def gen_signals(date_str: str, transcript: str) -> Tuple[str, str, str]:
