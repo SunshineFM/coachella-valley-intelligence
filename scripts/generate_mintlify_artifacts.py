@@ -358,6 +358,33 @@ def update_docs_json(date_str: str) -> None:
         f.write('\n')  # Add trailing newline
 
 
+def update_transcripts_nav(date_str: str) -> None:
+    """Prepend the new transcript page to the Transcripts group in docs.json (newest first)."""
+    docs_path = "docs.json"
+
+    with open(docs_path, 'r', encoding='utf-8') as f:
+        docs = json.load(f)
+
+    transcripts_group = None
+    for group in docs['navigation']['groups']:
+        if group['group'] == 'Transcripts':
+            transcripts_group = group
+            break
+
+    if not transcripts_group:
+        raise ValueError("Could not find 'Transcripts' group in docs.json")
+
+    transcript_path = f"transcripts/pages/{date_str}"
+
+    if transcript_path not in transcripts_group['pages']:
+        transcripts_group['pages'].insert(0, transcript_path)
+        print(f"  → Added {transcript_path} to Transcripts nav")
+
+    with open(docs_path, 'w', encoding='utf-8') as f:
+        json.dump(docs, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+
+
 def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
@@ -370,8 +397,9 @@ def write_outputs(date_str: str, transcript: str) -> None:
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc, sidebar_title) + "\n" + sig_body)
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
-    # Update docs.json with the new brief
+    # Update docs.json with the new brief and transcript nav
     update_docs_json(date_str)
+    update_transcripts_nav(date_str)
 
 
 def update_episodes_index(new_dates: List[str]) -> None:
