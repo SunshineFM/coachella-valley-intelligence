@@ -77,6 +77,17 @@
           "methodology/corrections",
           "methodology/glossary"
         ]
+      },
+      {
+        "group": "Transcripts",
+        "pages": [
+          "transcripts/pages/2026-02-16-1459",
+          "transcripts/pages/2026-02-14-1500",
+          "transcripts/pages/2026-02-13-1500",
+          "transcripts/pages/2026-02-12-1459",
+          "transcripts/pages/2026-02-11-1459",
+          "transcripts/pages/2026-02-10-1500"
+        ]
       }
     ]
   },
