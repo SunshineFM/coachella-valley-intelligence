@@ -4,16 +4,13 @@ on:
   push:
     paths:
       - "transcripts/source/*.txt"
-    paths-ignore:
-      # Prevent the bot's own enhanced-transcript commit from re-triggering this workflow
-      - "transcripts/source/*-enhanced.txt"
 
   workflow_dispatch:
     inputs:
       date:
-        description: "Transcript date to process (YYYY-MM-DD-HHMM). Leave blank to auto-detect from latest commit."
-        required: false
-        default: ""
+        description: 'Date to process (YYYY-MM-DD-HHMM format)'
+        required: true
+        type: string
 
 jobs:
   generate:
@@ -22,6 +19,12 @@ jobs:
       contents: write
 
     steps:
+      - name: Skip enhanced transcripts
+        if: contains(github.event.head_commit.message, 'enhanced') || endsWith(github.event.head_commit.modified[0], '-enhanced.txt')
+        run: |
+          echo "Skipping enhanced transcript"
+          exit 0
+
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
