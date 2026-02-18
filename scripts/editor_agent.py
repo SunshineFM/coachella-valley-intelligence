@@ -171,7 +171,7 @@ def claude_chat(system, user, use_web_search=False, max_tokens=8192):
     if use_web_search:
         payload["temperature"] = 0.3
         payload["tools"] = [{
-            "type": "web_search_20250305",
+            "type": "web_search_20260209",
             "name": "web_search",
             "max_uses": MAX_WEB_SEARCHES,
             "user_location": {
@@ -219,7 +219,7 @@ def claude_chat_with_continuation(system, user, use_web_search=False, max_tokens
         if use_web_search:
             payload["temperature"] = 0.3
             payload["tools"] = [{
-                "type": "web_search_20250305",
+                "type": "web_search_20260209",
                 "name": "web_search",
                 "max_uses": MAX_WEB_SEARCHES,
                 "user_location": {
@@ -565,6 +565,67 @@ def format_source_flags_for_prompt(flags):
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# Pass 2: Enhance transcript
+# ---------------------------------------------------------------------------
+
+def enhance_transcript(transcript, claims, proper_noun_flags, source_flags):
+    claims_text = json.dumps(claims, indent=2) if claims else "[]"
+
+    if claims:
+        claims_instruction = f"CLAIMS TO VERIFY:\n{claims_text}\n\n"
+    else:
+        claims_instruction = (
+            "No pre-extracted claims list available. Identify and verify all specific "
+            "factual claims (funding amounts, dates, names, statistics, etc.) directly "
+            "from the transcript.\n\n"
+        )
+
+    proper_noun_block = format_proper_noun_flags_for_prompt(proper_noun_flags)
+    source_block = format_source_flags_for_prompt(source_flags)
+
+    # Build system prompt with flags interpolated
+    system = ENHANCEMENT_SYSTEM.format(
+        proper_noun_flags=proper_noun_block,
+        source_citation_flags=source_block,
+    )
+
+    user_message = (
+        f"Here is a raw radio transcript from SunshineFM, followed by verifiable claims "
+        f"and pre-flagged issues.\n\n"
+        f"Your task:\n"
+        f"1. Address every PRE-FLAGGED PROPER NOUN ISSUE first — search each flagged "
+        f"name+company combination and annotate accordingly\n"
+        f"2. Address every PRE-FLAGGED SOURCE CITATION — search for the named article "
+        f"and add a citation annotation\n"
+        f"3. Use web search to verify each claim in the claims list\n"
+        f"4. Add inline annotations to the transcript (see system prompt for format)\n"
+        f"5. Fix transcription errors in proper nouns\n"
+        f"6. Add WHO/WHAT/WHERE/WHEN/WHY context blocks to the first mention of each "
+        f"major story\n"
+        f"7. Return the complete enhanced transcript\n\n"
+        f"{claims_instruction}"
+        f"TRANSCRIPT:\n{transcript}"
+    )
+
+    print("  Calling Claude with web search to fact-check and enhance...")
+    response = claude_chat_with_retry(
+        system=system,
+        user=user_message,
+        use_web_search=True,
+        max_tokens=32768,   # max output; continuation loop handles overflow
+    )
+
+    enhanced_text = extract_text_from_response(response)
+    citations = extract_citations_from_response(response)
+    search_count = get_search_count(response)
+
+    print(f"  Web searches performed: {search_count}")
+    print(f"  Citations collected: {len(citations)}")
+
+    return build_enhanced_output(enhanced_text, citations)
+
+
 def build_enhanced_output(enhanced_text, citations):
     output_parts = [enhanced_text]
 
@@ -657,9 +718,9 @@ def main():
         source_flags = []
     print()
 
-    # Pass 2: Assemble output with pre-pass flags (web search removed)
-    print("Pass 2: Assembling annotated output...")
-    enhanced = build_enhanced_output(transcript, [])
+    # Pass 2: Enhance with web search
+    print("Pass 2: Fact-checking and enhancing transcript...")
+    enhanced = enhance_transcript(transcript, claims, proper_noun_flags, source_flags)
     print()
 
     # Write output
