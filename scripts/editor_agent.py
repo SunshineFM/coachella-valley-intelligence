@@ -202,7 +202,7 @@ def claude_chat(system, user, use_web_search=False, max_tokens=8192):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def claude_chat_with_continuation(system, user, use_web_search=False, max_tokens=16384):
+def claude_chat_with_continuation(system, user, use_web_search=False, max_tokens=32768):
     """Call Claude API with automatic continuation for pause_turn responses."""
     messages = [{"role": "user", "content": user}]
     all_content_blocks = []
@@ -258,6 +258,11 @@ def claude_chat_with_continuation(system, user, use_web_search=False, max_tokens
             print("    (pause_turn received, continuing...)")
             messages.append({"role": "assistant", "content": content_blocks})
             messages.append({"role": "user", "content": "Please continue."})
+        elif stop_reason == "max_tokens":
+            # Output was cut off — resume from where we left off
+            print("    (max_tokens reached, continuing output...)")
+            messages.append({"role": "assistant", "content": content_blocks})
+            messages.append({"role": "user", "content": "Please continue exactly where you left off, without repeating any text."})
         else:
             break
 
@@ -608,16 +613,12 @@ def enhance_transcript(transcript, claims, proper_noun_flags, source_flags):
         system=system,
         user=user_message,
         use_web_search=True,
-        max_tokens=16384,
+        max_tokens=32768,   # max output; continuation loop handles overflow
     )
 
     enhanced_text = extract_text_from_response(response)
     citations = extract_citations_from_response(response)
     search_count = get_search_count(response)
-
-    stop_reason = response.get("stop_reason", "")
-    if stop_reason == "max_tokens":
-        print("  Warning: Response was truncated (max_tokens reached)")
 
     print(f"  Web searches performed: {search_count}")
     print(f"  Citations collected: {len(citations)}")
