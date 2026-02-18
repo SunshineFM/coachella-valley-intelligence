@@ -4,15 +4,14 @@ on:
   push:
     paths:
       - "transcripts/source/*.txt"
-
-  workflow_run:
-    workflows: ["Import transcript from sunshinefm-website"]
-    types: [completed]
+    paths-ignore:
+      # Prevent the bot's own enhanced-transcript commit from re-triggering this workflow
+      - "transcripts/source/*-enhanced.txt"
 
   workflow_dispatch:
     inputs:
       date:
-        description: "Transcript date to generate (YYYY-MM-DD or YYYY-MM-DD-HHMM). Leave blank to auto-detect."
+        description: "Transcript date to process (YYYY-MM-DD-HHMM). Leave blank to auto-detect from latest commit."
         required: false
         default: ""
 
@@ -21,9 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
-    # IMPORTANT: don't skip when manually run
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repo
@@ -37,45 +33,87 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate episode + signals + update Today
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # ── Step 1: Resolve the transcript date ──────────────────────────────
+      # Priority: explicit workflow_dispatch input > latest changed .txt in push
+      - name: Resolve transcript date
+        id: resolve_date
         run: |
           set -euo pipefail
-          # Extract date from changed transcript filename
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- transcripts/source/*.txt | head -1)
-          if [ -n "$CHANGED" ]; then
+
+          DATE="${{ github.event.inputs.date }}"
+
+          if [ -z "$DATE" ]; then
+            # Auto-detect: find the raw transcript (.txt, not -enhanced.txt) changed in this push
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'transcripts/source/*.txt' \
+              | grep -v '\-enhanced\.txt' \
+              | head -1)
+
+            if [ -z "$CHANGED" ]; then
+              echo "No new raw transcript found in this commit. Nothing to do."
+              echo "date=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
             DATE=$(basename "$CHANGED" .txt)
-            echo "Processing date: $DATE"
-            python3 scripts/generate_mintlify_artifacts.py --date "$DATE"
-          else
-            echo "No new transcript found in this commit."
           fi
 
-      - name: Commit & push (with rebase + retry)
+          echo "Resolved date: $DATE"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+
+      # ── Step 2: Run Editor Agent (fact-check + annotate) ─────────────────
+      - name: Run Editor Agent
+        if: steps.resolve_date.outputs.date != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          DATE="${{ steps.resolve_date.outputs.date }}"
+          echo "Running editor_agent.py for $DATE ..."
+          python3 scripts/editor_agent.py "$DATE"
+          echo "Editor Agent complete."
+
+      # ── Step 3: Run Mintlify artifact generator ───────────────────────────
+      - name: Generate Intelligence Brief
+        if: steps.resolve_date.outputs.date != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          DATE="${{ steps.resolve_date.outputs.date }}"
+          echo "Running generate_mintlify_artifacts.py for $DATE ..."
+          python3 scripts/generate_mintlify_artifacts.py --date "$DATE"
+          echo "Artifact generation complete."
+
+      # ── Step 4: Commit everything (with rebase + retry) ──────────────────
+      - name: Commit & push
+        if: steps.resolve_date.outputs.date != ''
         run: |
           set -euo pipefail
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          git add intelligence transcripts docs.json || true
+          # Stage: enhanced transcript, intelligence brief, transcript page, nav
+          git add transcripts/source/*-enhanced.txt intelligence transcripts/pages docs.json || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
 
-          git commit -m "feat: generate Mintlify artifacts from transcript"
+          DATE="${{ steps.resolve_date.outputs.date }}"
+          git commit -m "feat: editor-enhanced brief for $DATE (editor agent + intelligence brief + nav)"
 
           for i in 1 2 3 4 5; do
             git pull --rebase origin main || true
             if git push origin main; then
-              echo "Push succeeded."
+              echo "Push succeeded on attempt $i."
               exit 0
             fi
             echo "Push failed (attempt $i). Retrying in 3s..."
             sleep 3
           done
 
-          echo "Push failed after retries."
+          echo "ERROR: Push failed after 5 attempts."
           exit 1
