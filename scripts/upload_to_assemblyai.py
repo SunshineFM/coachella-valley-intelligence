@@ -55,7 +55,11 @@ def upload_mp3(mp3_path):
 
 def request_transcript(upload_url):
     log("Requesting transcription...")
-    payload = json.dumps({"audio_url": upload_url}).encode()
+    payload = json.dumps({
+        "audio_url": upload_url,
+        "speech_model": "universal-3-pro",
+        "context": "This is a daily AI and business radio show called SunshineFM, broadcasting from Palm Springs in the Coachella Valley, California. The host is Sat Singh. The show covers AI industry news, startups, founders, venture capital, and how the new economy is reshaping business and life in the desert. Common terminology includes: large language models, AI agents, inference, fine-tuning, RAG, Claude, Anthropic, OpenAI, Mistral, Perplexity, Kling, Runway, Suno, OpenClaw, Coachella Valley, Palm Springs, Palm Desert, Rancho Mirage, Cathedral City, Indio."
+    }).encode()
     req = urllib.request.Request(
         "https://api.assemblyai.com/v2/transcript",
         data=payload,

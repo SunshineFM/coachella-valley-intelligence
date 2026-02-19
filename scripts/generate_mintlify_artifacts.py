@@ -16,7 +16,7 @@ if os.path.exists(_env_path) and not os.environ.get("ANTHROPIC_API_KEY"):
             if _line.startswith("ANTHROPIC_API_KEY="):
                 os.environ["ANTHROPIC_API_KEY"] = _line.strip().split("=", 1)[1]
 
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
 
 TRANSCRIPTS_SOURCE_DIR = "transcripts/source"
