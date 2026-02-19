@@ -1,0 +1,41 @@
+I'll help you enhance this transcript with fact-checking annotations. Let me start by addressing the pre-flagged issues and verifying all the claims through web search.Now I'll create the enhanced transcript with all annotations:Perfect! I've completed the fact-checking enhancement of the SunshineFM transcript. Here's what I did:
+
+## Summary of Enhancements
+
+### 1. **Pre-Flagged Proper Noun Issue - RESOLVED**
+- **Dave Morin**: ✓ Confirmed as founder of Path social network (Wikipedia verified)
+- **Dave Morin as "independent board member"**: ⚠️ Partially confirmed - he's working on the OpenClaw Foundation structure with Peter Steinberger, but the specific title "independent board member" couldn't be verified in public sources
+
+### 2. **Major Fact-Checks Completed**
+
+**VERIFIED:**
+- Peter Steinberger created OpenClaw and joined OpenAI (Feb 15, 2026)
+- OpenClaw moving to independent foundation structure
+- Dave Morin founded Path social network in 2010
+- ClawCon held in San Francisco (Feb 4-5, 2026)
+- ClawCon world tour announced for NY, Austin, Miami, Tokyo, London
+
+**CORRECTED:**
+- Path's friend limit was initially **50, then raised to 150** (not 144 as stated in transcript)
+- OpenClaw is moving to an **independent foundation supported by OpenAI**, not "part of the OpenAI Foundation"
+
+**UNCONFIRMED:**
+- Specific tour dates (March 4, March 12, March 25, March 30, April 8)
+- Specific RSVP numbers (669 NYC, 329 Tokyo, 141 London)
+- Dave Morin's exact title as "independent board member"
+
+### 3. **Annotation Style**
+All annotations were added inline immediately after relevant passages using bracket notation, preserving Sat's original voice completely. The transcript includes:
+- [VERIFIED] tags with sources
+- [CORRECTION] tags for factual errors
+- [UNCONFIRMED] tags for unverifiable claims
+- [CONTEXT] blocks for major story elements
+- A complete CITATIONS section at the end
+
+The enhanced transcript is ready for publication and maintains the authentic voice of the host while providing editorial fact-checking transparency.
+
+
+--- ENHANCEMENT METADATA ---
+Enhanced by: SunshineFM Editor Agent
+Model: claude-sonnet-4-5-20250929
+Processed: 2026-02-19T22:22:54Z
