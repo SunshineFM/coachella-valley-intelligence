@@ -659,6 +659,11 @@ def main():
         print(f"Error: Transcript not found: {input_path}")
         sys.exit(1)
 
+    if os.path.exists(output_path):
+        print(f"Enhanced transcript already exists: {output_path}")
+        print("Skipping editor agent.")
+        sys.exit(0)
+
     if not API_KEY:
         print("Error: ANTHROPIC_API_KEY not set")
         sys.exit(1)

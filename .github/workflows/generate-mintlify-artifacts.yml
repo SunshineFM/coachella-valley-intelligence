@@ -72,6 +72,11 @@ jobs:
         run: |
           set -euo pipefail
           DATE="${{ steps.resolve_date.outputs.date }}"
+          ENHANCED="transcripts/source/${DATE}-enhanced.txt"
+          if [ -f "$ENHANCED" ]; then
+            echo "Enhanced transcript already exists: $ENHANCED — skipping editor agent."
+            exit 0
+          fi
           echo "Running editor_agent.py for $DATE ..."
           python3 scripts/editor_agent.py "$DATE"
           echo "Editor Agent complete."
