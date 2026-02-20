@@ -26,8 +26,8 @@ SIGNALS_DIR = "intelligence"
 EPISODES_INDEX_PATH = os.path.join("intelligence", "episodes", "index.mdx")
 SIGNALS_INDEX_PATH = os.path.join("intelligence", "index.mdx")
 
-# Matches raw transcript paths like transcripts/source/2026-02-17-1459.txt
-DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2}(?:-\d{4})?)\.txt$")
+# Matches raw transcript paths like transcripts/source/2026-02-17-1459.txt or .md
+DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2}(?:-\d{4})?)\.(?:txt|md)$")
 MAX_RETRIES = 3
 
 
@@ -270,7 +270,7 @@ def changed_transcripts() -> List[str]:
 
     candidates = []
     for fn in os.listdir(TRANSCRIPTS_SOURCE_DIR):
-        if re.match(r"\d{4}-\d{2}-\d{2}(?:-\d{4})?\.txt$", fn):
+        if re.match(r"\d{4}-\d{2}-\d{2}(?:-\d{4})?\.(?:txt|md)$", fn):
             full = os.path.join(TRANSCRIPTS_SOURCE_DIR, fn)
             candidates.append((os.path.getmtime(full), full))
 
@@ -442,9 +442,15 @@ def main() -> None:
         if not date_str:
             continue
 
-        raw_path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}.txt")
-        if not os.path.exists(raw_path):
-            print(f"  ✗ Skipping {date_str}: transcript not found ({raw_path})")
+        # Accept either .txt (AssemblyAI output) or .md (manual analysis)
+        raw_path = next(
+            (os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}{ext}")
+             for ext in (".txt", ".md")
+             if os.path.exists(os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}{ext}"))),
+            None,
+        )
+        if raw_path is None:
+            print(f"  ✗ Skipping {date_str}: transcript not found ({date_str}.txt / .md)")
             failed_dates.append(date_str)
             continue
 

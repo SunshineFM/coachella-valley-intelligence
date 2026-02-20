@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "transcripts/source/*.txt"
+      - "transcripts/source/*.md"
 
   workflow_dispatch:
     inputs:
@@ -31,7 +32,7 @@ jobs:
           python-version: "3.11"
 
       # ── Step 1: Resolve the transcript date ──────────────────────────────
-      # Priority: explicit workflow_dispatch input > latest changed .txt in push
+      # Priority: explicit workflow_dispatch input > latest changed .txt/.md in push
       - name: Resolve transcript date
         id: resolve_date
         run: |
@@ -40,8 +41,8 @@ jobs:
           DATE="${{ github.event.inputs.date }}"
 
           if [ -z "$DATE" ]; then
-            # Auto-detect: find the raw transcript (.txt, not -enhanced.txt) changed in this push
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'transcripts/source/*.txt' \
+            # Auto-detect: find the raw transcript (.txt or .md) changed in this push
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'transcripts/source/*.txt' 'transcripts/source/*.md' \
               | head -1)
 
             if [ -z "$CHANGED" ]; then
@@ -50,7 +51,8 @@ jobs:
               exit 0
             fi
 
-            DATE=$(basename "$CHANGED" .txt)
+            # Strip extension (.txt or .md) to get the date slug
+            DATE=$(basename "$CHANGED" | sed 's/\.[^.]*$//')
           fi
 
           echo "Resolved date: $DATE"
