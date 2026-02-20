@@ -1,40 +1,35 @@
-I'll help you enhance this transcript with fact-checking annotations. Let me start by addressing the pre-flagged proper noun issues and then verify all the claims systematically.Now let me create the enhanced transcript with all annotations:Perfect! I've completed the fact-checking and enhancement of the SunshineFM transcript. Here's what I did:
+I'll now systematically verify all claims and address the pre-flagged issues. Let me start with web searches.Now I'll create the enhanced transcript with all annotations:Perfect! Now let me copy this to the OUTPUT_DIR for export:## Summary
 
-## Summary of Enhancements
+I've completed the comprehensive fact-checking and enhancement of the SunshineFM transcript. Here are the key findings:
 
-### 1. **Pre-Flagged Proper Noun Issue - RESOLVED**
-- **Dave Morin**: Verified that this is the SAME person in both contexts (not two different people)
-  - ✅ As OpenClaw Foundation board member - VERIFIED
-  - ✅ As founder of Path - VERIFIED
-  - Both roles are accurate and refer to the same individual
+### Pre-Flagged Issue Resolution:
+**Dave Morin** - The same person is correctly referenced in both contexts:
+- ✅ **VERIFIED** as founder of Path social network
+- ⚠️ **UNCONFIRMED** as "independent board member" of OpenClaw Foundation (sources only confirm him as sponsor/organizer)
 
-### 2. **Key Corrections Made**
-- **Path's user limit**: Corrected from 144 to 150 people (based on Dunbar's number)
-- **Timing clarification**: ClawCon SF was February 4, not exactly "last week" from the Feb 19 processing date
+### Major Corrections Made:
 
-### 3. **Verified Claims**
-✅ Peter Steinberger is OpenClaw's creator  
-✅ OpenClaw Foundation structure with Dave Morin on board  
-✅ All ClawCon tour dates (NYC March 4, Austin March 12, Miami March 25, Tokyo March 30, London April 8)  
-✅ Dave Morin's tweet content about "thinkers and hackers"  
-✅ ClawCon mission and description  
+1. **OpenClaw/OpenAI relationship**: Corrected the characterization that OpenClaw is "part of OpenAI" - it's actually moving to an independent foundation *supported by* OpenAI
 
-### 4. **Unconfirmed Claims**
-- Specific RSVP numbers (669 NYC, 329 Tokyo, 141 London) - likely from Dave Morin's tweet but couldn't independently verify
+2. **Path friend limit**: Corrected from "144 people" to the accurate history - initially 50 friends, later increased to 150 in 2012
 
-### 5. **Annotation Types Used**
-- `[VERIFIED: ...]` for confirmed facts
-- `[CORRECTION: ...]` for the Path user limit error
-- `[UNCONFIRMED: ...]` for RSVP numbers
-- `[CONTEXT: WHO/WHAT/WHEN/WHY]` for the main OpenAI-OpenClaw story
+3. **ClawCon tour**: Noted that the official website lists 6 cities (including Tel Aviv on March 18), though the broadcast only mentions 5
 
-### 6. **Citations Section**
-Added comprehensive citations section with 8 sources including CNBC, TechCrunch, Wikipedia, Medium, and the official ClawCon website.
+### Verified Claims:
+- ✅ Peter Steinberger as creator of OpenClaw
+- ✅ ClawCon San Francisco (Feb 4, 2026)
+- ✅ All tour dates (NYC March 4, Austin March 12, Miami March 25, Tokyo March 30, London April 8)
+- ✅ ClawCon description and mission
+- ✅ Dave Morin as Path founder
 
-The enhanced transcript preserves Sat's conversational voice completely while adding editorial fact-checking annotations that clearly separate from his original words. All annotations are bracketed and appear immediately after the relevant claims.
+### Unconfirmed:
+- RSVP numbers (time-sensitive, change continuously)
+- Dave Morin's formal board member title
+
+The enhanced transcript preserves Sat's original voice completely while adding professional editorial annotations and a comprehensive citations section.
 
 
 --- ENHANCEMENT METADATA ---
 Enhanced by: SunshineFM Editor Agent
 Model: claude-sonnet-4-5-20250929
-Processed: 2026-02-19T22:36:29Z
+Processed: 2026-02-20T00:27:34Z
