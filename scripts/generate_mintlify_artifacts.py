@@ -210,6 +210,8 @@ IF THE TRANSCRIPT IS TOO SHORT: If the transcript is under 500 words or lacks su
 
 GROUNDING RULE: Every signal must be directly traceable to something said in the transcript. If you cannot point to a specific moment in the transcript that supports a claim, do not include it. The Local Radar section must only include events or items mentioned in the transcript — do not generate plausible-sounding local events from general knowledge.
 
+SOURCE FIDELITY RULE: Generate this Intelligence Brief using ONLY information explicitly stated in the source content provided. Do not supplement, expand, or correct using external world knowledge. If you cannot trace a claim directly to the source content, do not include it. If the source content is ambiguous or incomplete on a point, omit that point entirely rather than filling in the gap. If the source content is too short to support 6 signals, generate only as many signals as the content genuinely supports — even if that is just 2 or 3. Do not pad.
+
 ABSOLUTE RULE: Do not invent facts."""
 
     user = f"""
