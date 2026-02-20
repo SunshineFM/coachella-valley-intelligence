@@ -7,7 +7,7 @@ import subprocess
 import urllib.request
 from typing import List, Tuple
 
-# Load API key from .env when running locally (same pattern as editor_agent.py).
+# Load API key from .env when running locally.
 # In GitHub Actions the env var is already set by the secrets context.
 _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.env")
 if os.path.exists(_env_path) and not os.environ.get("ANTHROPIC_API_KEY"):
@@ -27,7 +27,6 @@ EPISODES_INDEX_PATH = os.path.join("intelligence", "episodes", "index.mdx")
 SIGNALS_INDEX_PATH = os.path.join("intelligence", "index.mdx")
 
 # Matches raw transcript paths like transcripts/source/2026-02-17-1459.txt
-# Does NOT match -enhanced.txt files — those are resolved separately.
 DATE_RE = re.compile(r"^transcripts/source/(\d{4}-\d{2}-\d{2}(?:-\d{4})?)\.txt$")
 MAX_RETRIES = 3
 
@@ -95,25 +94,6 @@ def write_text(path: str, content: str) -> None:
     with open(path, "w", encoding="utf-8") as f:
         f.write(sanitize_mdx(content.rstrip()) + "\n")
 
-
-def resolve_transcript_path(date_str: str) -> Tuple[str, bool]:
-    """Return (path, is_enhanced) for the best available transcript for date_str.
-
-    Prefers the editor-agent-enhanced file (<date>-enhanced.txt) when it exists.
-    Falls back to the raw transcript (<date>.txt) if no enhanced version is found.
-    Raises FileNotFoundError if neither exists.
-    """
-    enhanced_path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}-enhanced.txt")
-    raw_path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}.txt")
-
-    if os.path.exists(enhanced_path):
-        return enhanced_path, True
-    if os.path.exists(raw_path):
-        return raw_path, False
-    raise FileNotFoundError(
-        f"No transcript found for {date_str} "
-        f"(checked {enhanced_path} and {raw_path})"
-    )
 
 
 def mdx_frontmatter(title: str, description: str, sidebarTitle: str = None) -> str:
@@ -296,27 +276,11 @@ def changed_transcripts() -> List[str]:
     return [c[1] for c in candidates]  # Return all unprocessed transcripts
 
 
-def make_transcript_page(date_str: str, transcript: str, is_enhanced: bool = False) -> str:
-    if is_enhanced:
-        title = f"{date_str} Transcript (Editor-Enhanced)"
-        desc = "Fact-checked and annotated transcript produced by the SunshineFM Editor Agent."
-        header = "## Editor-enhanced transcript"
-        source_note = (
-            "> **Editor Agent applied.** "
-            "This transcript has been fact-checked, annotated, and corrected by the "
-            "SunshineFM Editor Agent. Annotations appear inline as `[VERIFIED: ...]`, "
-            "`[CORRECTION: ...]`, `[CORRECTION NEEDED: ...]`, `[UNCONFIRMED: ...]`, "
-            "`[CONTEXT: ...]`, and `[TRANSCRIPTION NOTE: ...]` blocks.\n"
-        )
-    else:
-        title = f"{date_str} Raw Transcript"
-        desc = "Raw transcript (source text)."
-        header = "## Raw transcript"
-        source_note = (
-            "> **No enhanced version found.** "
-            "This is the unprocessed source transcript. "
-            "Run the Editor Agent to generate a fact-checked version.\n"
-        )
+def make_transcript_page(date_str: str, transcript: str) -> str:
+    title = f"{date_str} Transcript"
+    desc = "Raw transcript (source text)."
+    header = "## Transcript"
+    source_note = "> This is the source transcript from SunshineFM.\n"
 
     body = "\n".join([
         source_note,
@@ -414,7 +378,7 @@ def update_transcripts_nav(date_str: str) -> None:
     return
 
 
-def write_outputs(date_str: str, transcript: str, is_enhanced: bool = False) -> None:
+def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
     # Extract sidebarTitle by stripping " — Intelligence Brief" suffix
@@ -424,7 +388,7 @@ def write_outputs(date_str: str, transcript: str, is_enhanced: bool = False) -> 
     transcript_page_path = os.path.join(TRANSCRIPTS_PAGES_DIR, f"{date_str}.mdx")
 
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc, sidebar_title) + "\n" + sig_body)
-    write_text(transcript_page_path, make_transcript_page(date_str, transcript, is_enhanced))
+    write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
     # Update docs.json with the new brief and transcript nav
     update_docs_json(date_str)
@@ -476,27 +440,24 @@ def main() -> None:
         if not date_str:
             continue
 
-        # Prefer enhanced transcript when available; fall back to raw
-        try:
-            resolved_path, is_enhanced = resolve_transcript_path(date_str)
-        except FileNotFoundError as e:
-            print(f"  ✗ Skipping {date_str}: {e}")
+        raw_path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{date_str}.txt")
+        if not os.path.exists(raw_path):
+            print(f"  ✗ Skipping {date_str}: transcript not found ({raw_path})")
             failed_dates.append(date_str)
             continue
 
-        source_label = "enhanced" if is_enhanced else "raw"
-        print(f"\nProcessing {date_str}  [source: {source_label} — {resolved_path}]")
+        print(f"\nProcessing {date_str}  [{raw_path}]")
 
-        transcript = read_text(resolved_path)
+        transcript = read_text(raw_path)
         if not transcript:
             print(f"  ✗ Skipping {date_str}: transcript is empty")
             failed_dates.append(date_str)
             continue
 
         try:
-            write_outputs(date_str, transcript, is_enhanced=is_enhanced)
+            write_outputs(date_str, transcript)
             processed_dates.append(date_str)
-            print(f"  ✓ Generated brief and transcript page for {date_str} ({source_label})")
+            print(f"  ✓ Generated brief and transcript page for {date_str}")
         except Exception as e:
             failed_dates.append(date_str)
             print(f"  ✗ FAILED {date_str}: {e}")

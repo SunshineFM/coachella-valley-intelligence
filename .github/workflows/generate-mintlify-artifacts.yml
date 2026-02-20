@@ -19,12 +19,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Skip enhanced transcripts
-        if: contains(github.event.head_commit.message, 'enhanced') || endsWith(github.event.head_commit.modified[0], '-enhanced.txt')
-        run: |
-          echo "Skipping enhanced transcript"
-          exit 0
-
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -48,7 +42,6 @@ jobs:
           if [ -z "$DATE" ]; then
             # Auto-detect: find the raw transcript (.txt, not -enhanced.txt) changed in this push
             CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'transcripts/source/*.txt' \
-              | grep -v '\-enhanced\.txt' \
               | head -1)
 
             if [ -z "$CHANGED" ]; then
@@ -63,25 +56,7 @@ jobs:
           echo "Resolved date: $DATE"
           echo "date=$DATE" >> "$GITHUB_OUTPUT"
 
-      # ── Step 2: Run Editor Agent (fact-check + annotate) ─────────────────
-      - name: Run Editor Agent
-        if: steps.resolve_date.outputs.date != ''
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        timeout-minutes: 15
-        run: |
-          set -euo pipefail
-          DATE="${{ steps.resolve_date.outputs.date }}"
-          ENHANCED="transcripts/source/${DATE}-enhanced.txt"
-          if [ -f "$ENHANCED" ]; then
-            echo "Enhanced transcript already exists: $ENHANCED — skipping editor agent."
-            exit 0
-          fi
-          echo "Running editor_agent.py for $DATE ..."
-          python3 scripts/editor_agent.py "$DATE"
-          echo "Editor Agent complete."
-
-      # ── Step 3: Run Mintlify artifact generator ───────────────────────────
+      # ── Step 2: Run Mintlify artifact generator ───────────────────────────
       - name: Generate Intelligence Brief
         if: steps.resolve_date.outputs.date != ''
         env:
@@ -102,8 +77,8 @@ jobs:
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          # Stage: enhanced transcript, intelligence brief, transcript page, nav
-          git add transcripts/source/*-enhanced.txt intelligence transcripts/pages docs.json || true
+          # Stage: intelligence brief, transcript page, nav
+          git add intelligence transcripts/pages docs.json || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -111,7 +86,7 @@ jobs:
           fi
 
           DATE="${{ steps.resolve_date.outputs.date }}"
-          git commit -m "feat: editor-enhanced brief for $DATE (editor agent + intelligence brief + nav)"
+          git commit -m "feat: intelligence brief for $DATE"
 
           for i in 1 2 3; do
             git pull --rebase origin main && git push origin main && {
