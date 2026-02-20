@@ -108,15 +108,16 @@ jobs:
           DATE="${{ steps.resolve_date.outputs.date }}"
           git commit -m "feat: editor-enhanced brief for $DATE (editor agent + intelligence brief + nav)"
 
-          for i in 1 2 3 4 5; do
-            git pull --rebase origin main || true
-            if git push origin main; then
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && {
               echo "Push succeeded on attempt $i."
               exit 0
-            fi
-            echo "Push failed (attempt $i). Retrying in 3s..."
-            sleep 3
+            } || {
+              echo "Push failed (attempt $i). Aborting rebase and retrying in 5s..."
+              git rebase --abort 2>/dev/null || true
+              sleep 5
+            }
           done
 
-          echo "ERROR: Push failed after 5 attempts."
+          echo "ERROR: Push failed after 3 attempts."
           exit 1
