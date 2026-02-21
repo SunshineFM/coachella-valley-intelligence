@@ -221,13 +221,14 @@ Create a SunshineFM Intelligence Brief from this transcript.
 
 REQUIREMENTS:
 - Title format: "{format_display_date(date_str)} — Intelligence Brief"
-- Write 6 to 10 signals
+- Write only as many signals as the content genuinely supports. The brief is complete when the content is done, not when a quota is reached. Never stretch a single narrative into multiple signals to hit a number — if two signals are covering the same story from slightly different angles, consolidate them into one.
 - Each signal needs a bold one-line header that names the actual story (not a generic label)
 - Each signal body is 2 to 4 sentences — specific, local, opinionated
 - End with a "## Local Radar" section: 3 to 5 upcoming local events, opportunities, or things worth watching in the Valley this week. Be specific — names, dates, locations where available.
 - After Local Radar, add a "## Citeable Claims" section: 6-10 specific verifiable facts as a bulleted list. Include dates, dollar figures, company names, named individuals, and specific metrics from the transcript. Each claim should be independently verifiable.
 - After Citeable Claims, add a "## The Signal" section: 2-3 sentences synthesizing the day's signals into one coherent thesis about what's changing and why it matters to Coachella Valley founders, operators, and decision-makers.
 - Do NOT invent facts
+- Do NOT include meta-commentary about sourcing gaps, missing information, or what the transcript didn't cover — if a topic is thin, omit or consolidate it silently
 - Do NOT include an H1 or H2 title at the top of the body — the frontmatter title handles that automatically
 
 FORMAT EXAMPLE:
