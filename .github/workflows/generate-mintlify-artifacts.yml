@@ -79,8 +79,8 @@ jobs:
           git config user.name "SunshineFM Bot"
           git config user.email "bot@sunshine.fm"
 
-          # Stage: intelligence brief, transcript page, nav
-          git add intelligence transcripts/pages docs.json || true
+          # Stage: intelligence brief, transcript page, nav, home page
+          git add intelligence transcripts/pages docs.json index.mdx || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
