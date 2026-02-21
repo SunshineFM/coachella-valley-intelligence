@@ -381,6 +381,119 @@ def update_transcripts_nav(date_str: str) -> None:
     return
 
 
+def update_home_page_latest() -> None:
+    """Rewrite the '## Latest Intelligence' section in index.mdx with the
+    4 most recent Intelligence Briefs drawn from docs.json.
+
+    Fails silently — logs and returns on any error so brief generation
+    is never blocked by a home page update failure.
+    """
+    try:
+        docs_path = "docs.json"
+        index_path = "index.mdx"
+
+        # ── 1. Collect the 4 most recent brief slugs from docs.json ──────────
+        with open(docs_path, "r", encoding="utf-8") as f:
+            docs = json.load(f)
+
+        intel_briefs_group = next(
+            (g for g in docs["navigation"]["groups"] if g["group"] == "Intelligence Briefs"),
+            None,
+        )
+        if not intel_briefs_group:
+            print("  ⚠ update_home_page_latest: 'Intelligence Briefs' group not found in docs.json")
+            return
+
+        # Walk month groups in nav order, collecting brief slugs until we have 4
+        slugs: List[str] = []
+        for page in intel_briefs_group["pages"]:
+            if len(slugs) >= 4:
+                break
+            if isinstance(page, dict) and "pages" in page:
+                for brief_path in page["pages"]:
+                    if isinstance(brief_path, str) and re.match(
+                        r"^intelligence/\d{4}-\d{2}-\d{2}(?:-\d{4})?$", brief_path
+                    ):
+                        slugs.append(brief_path)
+                        if len(slugs) >= 4:
+                            break
+
+        if not slugs:
+            print("  ⚠ update_home_page_latest: no brief slugs found in docs.json")
+            return
+
+        # ── 2. Read sidebarTitle + description from each brief's MDX ─────────
+        entries: List[Tuple[str, str, str]] = []  # (slug, sidebar_title, description)
+        for slug in slugs:
+            mdx_path = f"{slug}.mdx"
+            if not os.path.exists(mdx_path):
+                print(f"  ⚠ update_home_page_latest: {mdx_path} not found, skipping")
+                continue
+            with open(mdx_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Extract sidebarTitle (preferred) or title from frontmatter.
+            # YAML single-quoted strings escape internal ' as '' — match up to
+            # a lone ' (not followed by another ') at end of line.
+            fm_pattern = r"^{key}:\s*'((?:[^']|'')*)'"
+            sidebar_match = re.search(fm_pattern.format(key="sidebarTitle"), content, re.MULTILINE)
+            title_match = re.search(fm_pattern.format(key="title"), content, re.MULTILINE)
+            label = (sidebar_match or title_match)
+            if not label:
+                print(f"  ⚠ update_home_page_latest: no title found in {mdx_path}, skipping")
+                continue
+            # Unescape doubled single quotes from YAML
+            link_text = label.group(1).replace("''", "'")
+
+            desc_match = re.search(fm_pattern.format(key="description"), content, re.MULTILINE)
+            description = desc_match.group(1).replace("''", "'") if desc_match else ""
+
+            entries.append((slug, link_text, description))
+
+        if not entries:
+            print("  ⚠ update_home_page_latest: no entries could be built, skipping index update")
+            return
+
+        # ── 3. Build the new Latest Intelligence block ────────────────────────
+        lines = ["## Latest Intelligence", ""]
+        for slug, link_text, description in entries:
+            url = f"/{slug}"
+            lines.append(f"**[{link_text}]({url})**")
+            if description:
+                lines.append(description)
+            lines.append("")
+        lines.append("[All Intelligence Briefs →](/intelligence)")
+        lines.append("")
+        new_block = "\n".join(lines)
+
+        # ── 4. Splice into index.mdx between the section header and next --- ──
+        with open(index_path, "r", encoding="utf-8") as f:
+            original = f.read()
+
+        # Match from "## Latest Intelligence\n" up to (but not including) "\n---\n"
+        pattern = re.compile(
+            r"(## Latest Intelligence\n).*?(\n---\n)",
+            re.DOTALL,
+        )
+        if not pattern.search(original):
+            print("  ⚠ update_home_page_latest: '## Latest Intelligence' section not found in index.mdx")
+            return
+
+        updated = pattern.sub(r"\g<1>" + new_block + r"\2", original)
+
+        if updated == original:
+            print("  → Home page Latest Intelligence already up to date")
+            return
+
+        with open(index_path, "w", encoding="utf-8") as f:
+            f.write(updated)
+
+        print(f"  → Updated index.mdx Latest Intelligence with {len(entries)} briefs")
+
+    except Exception as e:
+        print(f"  ⚠ update_home_page_latest failed ({e}) — continuing without home page update")
+
+
 def write_outputs(date_str: str, transcript: str) -> None:
     sig_title, sig_desc, sig_body = gen_signals_with_retry(date_str, transcript)
 
@@ -393,9 +506,10 @@ def write_outputs(date_str: str, transcript: str) -> None:
     write_text(signals_path, mdx_frontmatter(sig_title, sig_desc, sidebar_title) + "\n" + sig_body)
     write_text(transcript_page_path, make_transcript_page(date_str, transcript))
 
-    # Update docs.json with the new brief and transcript nav
+    # Update docs.json, then home page Latest Intelligence
     update_docs_json(date_str)
     update_transcripts_nav(date_str)
+    update_home_page_latest()
 
 
 def update_episodes_index(new_dates: List[str]) -> None:
@@ -422,12 +536,17 @@ def main() -> None:
             forced_date = sys.argv[idx + 1]
 
     if forced_date:
-        # Verify at least the raw source exists before queuing
-        raw_path = os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{forced_date}.txt")
-        if not os.path.exists(raw_path):
-            print(f"No transcript found for {forced_date}")
+        # Verify at least the raw source exists before queuing (.txt or .md)
+        source_path = next(
+            (os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{forced_date}{ext}")
+             for ext in (".txt", ".md")
+             if os.path.exists(os.path.join(TRANSCRIPTS_SOURCE_DIR, f"{forced_date}{ext}"))),
+            None,
+        )
+        if source_path is None:
+            print(f"No transcript found for {forced_date} (.txt or .md)")
             return
-        files = [f"transcripts/source/{forced_date}.txt"]
+        files = [source_path]
     else:
         files = changed_transcripts()
 
